@@ -1,4 +1,4 @@
-const C='vocab-v7';
+const C='vocab-v8';
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','manifest.webmanifest','icon2-192.png','icon2-512.png'])));});
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
