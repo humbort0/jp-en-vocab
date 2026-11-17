@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>일본어·영어 단어 암기장</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#8b5cf6">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -63,7 +67,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .card.open{grid-column:1/-1}
 .card-head{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:14px 12px 14px 16px;min-height:76px}
 .card-main{flex:1;min-width:0}
-.word{font-weight:900;font-size:1.2rem;line-height:1.9;overflow-wrap:anywhere}
+.word{font-weight:900;font-size:1.32rem;line-height:1.9;overflow-wrap:anywhere}
 .word.ja{font-family:var(--font-ja)}
 .num{font-size:.8rem;font-weight:500;opacity:.7;margin-left:6px;font-variant-numeric:tabular-nums}
 .sub{font-size:.9rem;overflow-wrap:anywhere}
@@ -416,7 +420,7 @@ function gridHtml(shown,total){
   return shown.map(function(o){
     var w=o.w,st=statusOf(S.lang,w),k=key(S.lang,w),open=S.open===k;
     var h='<article class="card '+st+(open?' open':'')+'"><button type="button" class="card-head" data-open="'+esc(k)+'" aria-expanded="'+open+'">'+
-      '<span class="card-main"><span>'+wordHtml(w,S.lang,settings.showReading)+'<span class="num">'+('00'+(o.i+1)).slice(-3)+'</span></span>'+
+      '<span class="card-main"><span>'+wordHtml(w,S.lang,settings.showReading)+'</span>'+
       (S.lang==='en'&&w.pron&&settings.showReading?'<span class="pron"> ['+esc(w.pron)+']</span>':'')+
       '<span class="sub" style="display:block">'+posBadge(S.lang,w)+esc(w.meaning)+'</span></span>'+
       '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
@@ -643,6 +647,7 @@ app.addEventListener('change',function(e){
   else if(e.target.id==='in-count'){settings.count=+e.target.value;save('vq.settings',settings);}
 });
 render();
+try{if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
 if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length))doFetch();
 })();
 </script>
