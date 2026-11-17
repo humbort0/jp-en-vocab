@@ -264,6 +264,7 @@ if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
 if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
 var progress=load('vq.progress',{});
 var marks=load('vq.marks',{});
+settings.repWord=settings.repWord||1;settings.repEx=settings.repEx||1;
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
 if(!data.src)data.src={ja:'sample',en:'sample'};
@@ -358,12 +359,13 @@ function viewGrammar(){
 
 /* ---------- 발음 듣기 ---------- */
 var canSpeak=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
-function speak(text,lang){
-  try{var u=new SpeechSynthesisUtterance(plain(text));u.lang=lang==='ja'?'ja-JP':'en-US';u.rate=.9;
-    window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}catch(e){}
+function speak(text,lang,times){
+  try{window.speechSynthesis.cancel();
+    for(var i=0;i<(times||1);i++){var u=new SpeechSynthesisUtterance(plain(text));u.lang=lang==='ja'?'ja-JP':'en-US';u.rate=.9;window.speechSynthesis.speak(u);}
+  }catch(e){}
 }
 function speakBtn(text,label){
-  return canSpeak?'<button type="button" class="speak" data-speak="'+esc(text)+'">▶ '+label+'</button>':'';
+  return canSpeak?'<button type="button" class="speak" data-kind="'+(label.indexOf('예문')>=0?'ex':'word')+'" data-speak="'+esc(text)+'">▶ '+label+'</button>':'';
 }
 
 /* ---------- 화면 ---------- */
@@ -546,6 +548,8 @@ function viewSettings(){
     '<label class="check"><input id="in-reading" type="checkbox"'+(settings.showReading?' checked':'')+'>요미가나·한글 발음 항상 표시</label>'+
     '<p class="note">끄면 틀렸을 때 첫 번째 힌트로 나옵니다.</p>'+
     '<div class="field"><label for="in-count">한 번에 풀 문제 수</label><select id="in-count">'+[5,10,20,0].map(function(n){return '<option value="'+n+'"'+(settings.count===n?' selected':'')+'>'+(n?n+'문제':'전체')+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label for="in-rep-word">단어 듣기 반복 횟수</label><select id="in-rep-word">'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(settings.repWord===n?' selected':'')+'>'+n+'회</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label for="in-rep-ex">예문 듣기 반복 횟수</label><select id="in-rep-ex">'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(settings.repEx===n?' selected':'')+'>'+n+'회</option>';}).join('')+'</select></div>'+
     '<div class="row"><button type="button" class="ghost" data-act="sample">샘플 단어로 되돌리기</button>'+
     '<button type="button" class="ghost" data-act="reset">'+(S.confirmReset?'한 번 더 누르면 기록이 지워집니다':'학습 기록 지우기')+'</button></div></section>';
 }
@@ -627,7 +631,7 @@ app.addEventListener('click',function(e){
   if(t.dataset.mark!=null){var mk=t.dataset.mark;if(marks[mk])delete marks[mk];else marks[mk]=1;save('vq.marks',marks);
     t.setAttribute('aria-pressed',String(!!marks[mk]));t.closest('.card').classList.toggle('mark',!!marks[mk]);return;}
   if(t.dataset.pos!=null){S.pos=t.dataset.pos;S.open=null;return render();}
-  if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang);
+  if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang,t.dataset.kind==='ex'?settings.repEx:settings.repWord);
   if(t.dataset.open!=null){S.open=S.open===t.dataset.open?null:t.dataset.open;return render();}
   if(t.dataset.choice!=null)return pick(+t.dataset.choice);
   var a=t.dataset.act;
@@ -651,6 +655,8 @@ app.addEventListener('input',function(e){
 app.addEventListener('change',function(e){
   if(e.target.id==='in-reading'){settings.showReading=e.target.checked;save('vq.settings',settings);}
   else if(e.target.id==='in-count'){settings.count=+e.target.value;save('vq.settings',settings);}
+  else if(e.target.id==='in-rep-word'){settings.repWord=+e.target.value;save('vq.settings',settings);}
+  else if(e.target.id==='in-rep-ex'){settings.repEx=+e.target.value;save('vq.settings',settings);}
 });
 render();
 try{if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
