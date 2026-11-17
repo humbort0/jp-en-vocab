@@ -127,6 +127,8 @@ h2{font-size:1.05rem;margin:0 0 8px;font-weight:900}
 .field label{font-weight:700;font-size:.9rem}
 .field input,.field textarea,.field select{border:2px solid var(--mint);border-radius:12px;padding:12px;background:var(--mint-soft);width:100%}
 .field textarea{min-height:110px;resize:vertical}
+.field input[type=range]{border:0;background:none;padding:0;height:40px;accent-color:var(--pink-a)}
+.pct-out{font-weight:700;font-variant-numeric:tabular-nums}
 .note{font-size:.85rem;color:var(--ink-soft);margin:0 0 10px}
 .note code{background:var(--bg);border-radius:6px;padding:1px 5px;font-size:.85em}
 .status{font-size:.9rem;font-weight:700;margin-top:10px;white-space:pre-line}
@@ -264,6 +266,9 @@ if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
 if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
 var progress=load('vq.progress',{});
 var marks=load('vq.marks',{});
+settings.pct=settings.pct||(settings.count===0?100:5);
+function quizSize(n){return n?Math.max(1,Math.round(n*settings.pct/100)):0;}
+function pctText(){var n=studyList().length;return settings.pct+'% · 약 '+quizSize(n)+'문제 ('+(S.lang==='ja'?'일본어':'영어')+' '+LEVELS[S.level]+(S.pos==='all'?'':' '+POS_FILTER[S.lang].filter(function(f){return f[0]===S.pos;}).map(function(f){return f[1];}).join(''))+' '+n+'개 기준)';}
 settings.repWord=settings.repWord||1;settings.repEx=settings.repEx||1;
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
@@ -444,7 +449,7 @@ function gridHtml(shown,total){
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 function startQuiz(items,all){
   items=shuffle(items);
-  if(!all&&settings.count>0)items=items.slice(0,settings.count);
+  if(!all)items=items.slice(0,quizSize(items.length));
   S.q={lang:S.lang,items:items,i:0,results:[]};
   nextQuestion();S.view='quiz';render();window.scrollTo(0,0);
 }
@@ -547,7 +552,7 @@ function viewSettings(){
     '<section class="panel"><h2>학습 설정</h2>'+
     '<label class="check"><input id="in-reading" type="checkbox"'+(settings.showReading?' checked':'')+'>요미가나·한글 발음 항상 표시</label>'+
     '<p class="note">끄면 틀렸을 때 첫 번째 힌트로 나옵니다.</p>'+
-    '<div class="field"><label for="in-count">한 번에 풀 문제 수</label><select id="in-count">'+[5,10,20,0].map(function(n){return '<option value="'+n+'"'+(settings.count===n?' selected':'')+'>'+(n?n+'문제':'전체')+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label for="in-pct">한 번에 풀 문제 수</label><input id="in-pct" type="range" min="1" max="100" step="1" value="'+settings.pct+'"><div class="pct-out" id="pct-out">'+pctText()+'</div></div>'+
     '<div class="field"><label for="in-rep-word">단어 듣기 반복 횟수</label><select id="in-rep-word">'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(settings.repWord===n?' selected':'')+'>'+n+'회</option>';}).join('')+'</select></div>'+
     '<div class="field"><label for="in-rep-ex">예문 듣기 반복 횟수</label><select id="in-rep-ex">'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(settings.repEx===n?' selected':'')+'>'+n+'회</option>';}).join('')+'</select></div>'+
     '<div class="row"><button type="button" class="ghost" data-act="sample">샘플 단어로 되돌리기</button>'+
@@ -650,6 +655,7 @@ app.addEventListener('input',function(e){
   if(id==='q-search'){S.query=e.target.value;var list=studyList(),q=S.query.trim().toLowerCase();
     var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){var w=o.w;return !q||(plain(w.word)+' '+kana(w.word)+' '+w.meaning+' '+w.pron).toLowerCase().indexOf(q)>=0;});
     document.getElementById('grid').innerHTML=gridHtml(shown,list.length);}
+  else if(id==='in-pct'){settings.pct=+e.target.value;save('vq.settings',settings);document.getElementById('pct-out').textContent=pctText();}
   else if(id.indexOf('in-s-')===0){var pp=id.split('-');settings.sheets[pp[2]][+pp[3]]=e.target.value;save('vq.settings',settings);}
 });
 app.addEventListener('change',function(e){
