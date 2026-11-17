@@ -132,6 +132,22 @@ table.fmt th{background:var(--mint-soft)}
 .check{display:flex;align-items:center;gap:10px;font-weight:700;margin-bottom:12px}
 .check input{width:22px;height:22px;accent-color:var(--pink-a)}
 .sample-tag{font-size:.8rem;background:var(--cream);color:#9a5a12;border-radius:999px;padding:4px 10px;font-weight:700}
+.hero-in{flex-wrap:wrap}
+.hero-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--surface);border-radius:999px;padding:9px 14px;font-weight:700;font-size:.9rem;box-shadow:var(--shadow);min-height:40px}
+.chip b{font-weight:500;opacity:.7;font-size:.8rem}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff}
+.pos{display:inline-block;font-size:.72rem;font-weight:700;background:rgba(255,255,255,.7);color:var(--ink);border-radius:999px;padding:1px 8px;margin-right:6px;white-space:nowrap}
+.q-word .pos{background:var(--mint-soft);box-shadow:inset 0 0 0 1px var(--mint);margin:6px 0 0}
+.conj{background:rgba(255,255,255,.7);border-radius:14px;padding:10px 12px}
+.conj b{font-size:.8rem;color:var(--ink-soft)}
+.conj dl{margin:6px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px 12px}
+.conj dt{font-size:.72rem;color:var(--ink-soft)}
+.conj dd{margin:0;font-weight:700;line-height:2;font-family:var(--font-ja);overflow-wrap:anywhere}
+table.g td,table.g th{line-height:2;font-family:var(--font-ja)}
+table.g td{font-weight:700}
+.note.ja{line-height:2}
 @media (max-width:339px){.grid{grid-template-columns:1fr}}
 @media (min-width:800px){.hero-in,.wrap{max-width:760px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
@@ -140,7 +156,7 @@ table.fmt th{background:var(--mint-soft)}
 <div class="strip">구글 시트 단어장으로 푸는 뜻 맞히기 퀴즈</div>
 <header class="hero"><div class="hero-in">
   <h1>일본어·영어 단어 암기장</h1>
-  <button class="hero-btn" id="btn-settings" type="button">시트 연결·설정</button>
+  <span class="hero-btns"><button class="hero-btn" id="btn-grammar" type="button">일본어 문법 표</button><button class="hero-btn" id="btn-settings" type="button">시트 연결·설정</button></span>
 </div></header>
 <main class="wrap">
   <div class="pill" id="tab-lang" role="group" aria-label="언어 선택">
@@ -151,15 +167,22 @@ table.fmt th{background:var(--mint-soft)}
     <button type="button" data-level="0">초급</button>
     <button type="button" data-level="1">중급</button>
     <button type="button" data-level="2">고급</button>
+    <button type="button" data-level="3" id="lv-idiom" hidden>숙어</button>
   </div>
   <div id="app"></div>
 </main>
 <script>
 (function(){
 'use strict';
-var LEVELS=['초급','중급','고급'];
+var LEVELS=['초급','중급','고급','숙어'];
+function levelsOf(l){return l==='en'?LEVELS:LEVELS.slice(0,3);}
+var POS_LABEL={ja:{n:'명사',v1:'동사 1그룹',v2:'동사 2그룹',v3:'동사 3그룹',i:'い형용사',na:'な형용사',adv:'부사',etc:'기타'},en:{n:'명사',v:'동사',adj:'형용사',adv:'부사',idiom:'숙어',etc:'기타'}};
+var POS_FILTER={ja:[['all','전체'],['n','명사'],['v','동사'],['i','い형용사'],['na','な형용사'],['adv','부사'],['etc','기타']],en:[['all','전체'],['n','명사'],['v','동사'],['adj','형용사'],['adv','부사'],['etc','기타']]};
+var POSMAP={"ja": {"n": "今日,明日,昨日,毎日,今,朝,昼,夜,午前,午後,今週,来週,先週,今年,来年,去年,時間,週末,誕生日,休み,春,夏,秋,冬,一つ,一人,二人,半分,全部,最初,最後,私,友達,家族,父,母,兄,姉,弟,妹,子供,大人,先生,学生,名前,医者,会社員,店員,夫,妻,彼,彼女,皆さん,外国人,両親,祖父,祖母,人,頭,顔,目,耳,口,手,足,体,歯,お腹,声,髪,食べ物,飲み物,水,お茶,牛乳,ご飯,肉,魚,野菜,果物,卵,砂糖,塩,お酒,朝ご飯,昼ご飯,晩ご飯,料理,お菓子,弁当,味,コーヒー,パン,学校,会社,家,部屋,駅,病院,銀行,郵便局,図書館,公園,店,食堂,教室,大学,国,町,道,空港,映画館,喫茶店,入口,出口,台所,庭,建物,交番,本屋,お手洗い,隣,近く,上,下,中,外,前,後ろ,右,左,本,机,椅子,窓,電話,時計,財布,傘,靴,服,帽子,眼鏡,鍵,紙,鉛筆,辞書,新聞,雑誌,手紙,写真,切符,お金,荷物,冷蔵庫,電気,お風呂,箱,皿,薬,テレビ,かばん,天気,雨,雪,風,空,山,川,海,花,木,犬,猫,鳥,動物,色,電車,車,自転車,飛行機,地下鉄,船,バス,タクシー,勉強,宿題,試験,質問,仕事,日本語,英語,言葉,漢字,意味,映画,音楽,歌,旅行,買い物,散歩,掃除,洗濯,病気,風邪,約束,経験,準備,説明,連絡,相談,予定,予約,計画,会議,出張,残業,給料,上司,同僚,部下,就職,面接,資料,書類,報告,確認,変更,中止,延期,参加,出席,欠席,遅刻,注文,配達,値段,割引,無料,有料,支払い,現金,領収書,交換,返事,招待,紹介,案内,利用,使用,禁止,許可,注意,危険,安全,事故,火事,地震,台風,気温,季節,環境,自然,景色,観光,文化,習慣,伝統,歴史,経済,政治,社会,法律,規則,教育,技術,科学,研究,発表,成績,合格,卒業,入学,授業,復習,予習,練習,試合,優勝,趣味,興味,関心,感動,緊張,心配,安心,我慢,努力,成功,失敗,目的,目標,理由,原因,結果,影響,関係,状況,場合,方法,意見,賛成,反対,比較,選択,決定,判断,想像,記憶,感想,態度,性格,気分,感情,健康,症状,治療,手術,入院,退院,睡眠,栄養,体重,身長,年齢,人口,増加,減少,平均,割合,合計,距離,速度,温度,交通,渋滞,運転,免許,到着,出発,乗り換え,往復,片道,宿泊,引っ越し,家賃,近所,家事,修理,故障,製品,商品,品質,材料,輸出,輸入,貿易,生活,場所,問題,自分,世界,把握,妥協,貢献,懸念,概念,矛盾,偏見,先入観,傾向,現象,要因,根拠,前提,仮説,検証,分析,考察,指摘,批判,評価,見解,主張,説得,交渉,合意,契約,締結,撤回,是正,改善,改革,推進,促進,抑制,規制,緩和,廃止,導入,実施,施行,遂行,達成,維持,確保,獲得,喪失,崩壊,衰退,繁栄,発展,普及,浸透,拡大,縮小,削減,負担,赤字,黒字,景気,不況,需要,供給,投資,融資,利益,損失,賠償,補償,福祉,介護,少子化,高齢化,格差,貧困,差別,人権,義務,権利,責任,倫理,道徳,良心,尊重,配慮,遠慮,信頼,裏切り,誤解,偏り,葛藤,動揺,衝撃,憤り,嫉妬,後悔,反省,覚悟,決断,躊躇,挑戦,克服,忍耐,執着,意欲,意図,意識,認識,自覚,錯覚,直感,洞察,教養,素質,才能,業績,功績,名誉,権威,権力,支配,紛争,対立,摩擦,措置,対策,対応,対処,模索,追求,究明,解明,立証,証拠,証言,訴訟,判決,違反,犯罪,逮捕,被害,災害,避難,復興,支援,寄付,奉仕,汚染,排出,資源,枯渇,温暖化,生態系,絶滅,遺伝,細胞,免疫,感染,副作用,診断", "v1": "行く,帰る,飲む,聞く,読む,書く,話す,買う,売る,会う,待つ,働く,休む,遊ぶ,泳ぐ,歩く,走る,乗る,座る,立つ,入る,作る,使う,持つ,知る,分かる,習う,思う,言う,住む,洗う,脱ぐ,貸す,送る,始まる,終わる,歌う,撮る,切る,呼ぶ,手伝う,止まる,曲がる,渡る,困る,減る,変わる,決まる,届く,集まる,選ぶ,続く,頑張る,育つ,守る,壊す,直す,治る,落とす,拾う,並ぶ,運ぶ,動く,押す,引く,回す,触る,握る,受け取る,渡す,払う,断る,謝る,叱る,怒る,笑う,泣く,驚く,悲しむ,迷う,疑う,思い出す,気づく,間に合う,急ぐ,通う,通る,戻る,向かう,近づく,招く,誘う,付き合う,違う,余る,残る,残す,済む,進む,上がる,下がる,乾く,表す,示す,頼む,促す,担う,養う,培う,賄う,補う,償う,挑む,臨む,携わる,怠る,侮る,欺く,脅かす,阻む,拒む,退く,譲る,託す,潤す,費やす,損なう,滞る,志す,悟る,諭す,励ます,嘆く,悔やむ,惜しむ,慕う,敬う,罵る,呟く,囁く,叫ぶ,黙る,偽る,装う,繕う,覆う,覆す,翻す,揺らぐ,漂う,潜む,絡む,伴う,及ぼす,及ぶ,至る,遡る,辿る,赴く,施す,募る,絞る,砕く,削る,磨く,練る,凝る,凌ぐ,陥る,尽くす,果たす,喜ぶ,悩む", "v2": "食べる,見る,起きる,寝る,降りる,出る,開ける,閉める,教える,覚える,忘れる,着る,借りる,答える,疲れる,出かける,比べる,増える,変える,決める,伝える,届ける,集める,調べる,確かめる,続ける,始める,止める,諦める,慣れる,育てる,助ける,壊れる,捨てる,片付ける,並べる,投げる,受ける,預ける,褒める,信じる,感じる,考える,間違える,遅れる,離れる,訪ねる,尋ねる,別れる,足りる,進める,冷える,温める,濡れる,汚れる,割れる,折れる,破れる,消える,現れる,遂げる,妨げる,委ねる,蓄える,廃れる,衰える,栄える,極める,試みる,顧みる,戒める,慰める,憧れる,称える,紛れる,逸れる,隔てる,訪れる,設ける,備える,整える,鍛える,飽きる,懲りる,耐える,免れる,逃れる,尽きる,落ちる,過ぎる,似る,掲げる,滅びる,朽ちる", "v3": "来る", "i": "大きい,小さい,新しい,古い,高い,安い,低い,暑い,寒い,暖かい,涼しい,冷たい,長い,短い,重い,軽い,早い,遅い,近い,遠い,多い,少ない,難しい,易しい,面白い,楽しい,忙しい,痛い,甘い,辛い,広い,狭い,明るい,暗い,強い,弱い,若い,悪い,白い,黒い,赤い,青い,嬉しい,悲しい,寂しい,恥ずかしい,怖い,珍しい,詳しい,厳しい,優しい,正しい,細かい,柔らかい,硬い,深い,浅い,濃い,薄い,苦い,苦しい,眠い,懐かしい,激しい,貧しい,素晴らしい,著しい,甚だしい,夥しい,目覚ましい,乏しい,煩わしい,紛らわしい,疑わしい,望ましい,好ましい,相応しい,潔い,快い,尊い,儚い,脆い,渋い,鈍い,鋭い,険しい", "na": "好き,嫌い,上手,下手,元気,静か,有名,便利,親切,大切,大丈夫,簡単,暇,丈夫,必要,重要,複雑,単純,正確,自由,特別,普通,十分,無理,残念,真面目,熱心,丁寧,失礼,不便,不安,幸せ,楽,急,適当,確か,苦手,得意,曖昧,円滑,顕著,膨大,莫大,深刻,厳密,綿密,緻密,迅速,柔軟,頑固,謙虚,誠実,冷静,慎重,軽率,無謀,大胆,妥当,不可欠,画期的,抽象的", "adv": "一緒に,少し,時々,一番,本当に,多分,初めて,必ず,突然,最近,直接,特に,実は,例えば,絶対に,全然,結局,敢えて,殊に,専ら,極めて,一概に,徐々に,頻繁に,一向に,到底,依然として"}, "en": {"n": "family,mother,father,brother,sister,friend,teacher,student,doctor,child,baby,man,woman,boy,girl,people,neighbor,husband,wife,parent,head,face,eye,ear,nose,mouth,hand,foot,leg,arm,hair,tooth,heart,food,water,milk,bread,rice,egg,meat,fish,fruit,apple,vegetable,salt,sugar,coffee,tea,juice,breakfast,lunch,dinner,cake,house,home,room,kitchen,school,office,hospital,store,market,park,library,station,airport,city,town,country,street,road,bank,restaurant,hotel,beach,bridge,book,pen,paper,desk,chair,table,bed,door,window,phone,computer,clock,watch,key,bag,box,cup,bottle,picture,letter,money,ticket,umbrella,shoes,shirt,hat,car,bus,train,bike,plane,ship,sun,moon,star,sky,rain,snow,wind,weather,tree,flower,river,sea,mountain,dog,cat,bird,animal,color,morning,afternoon,evening,night,today,tomorrow,yesterday,week,month,year,hour,minute,time,day,spring,summer,fall,winter,name,job,question,answer,problem,idea,story,song,music,movie,game,sport,language,word,number,birthday,holiday,party,gift,trip,map,news,class,lesson,homework,schedule,experience,opportunity,environment,government,society,culture,tradition,history,science,technology,industry,economy,education,knowledge,information,communication,relationship,community,population,generation,customer,employee,manager,colleague,company,business,product,service,price,cost,budget,salary,income,tax,profit,contract,meeting,interview,appointment,reservation,application,document,report,project,plan,goal,purpose,reason,result,effect,cause,influence,solution,decision,choice,opinion,advice,suggestion,request,complaint,apology,promise,permission,agreement,argument,discussion,conversation,explanation,description,example,detail,difference,advantage,disadvantage,benefit,risk,danger,safety,accident,damage,injury,disease,medicine,treatment,patient,exercise,habit,diet,stress,emotion,feeling,mood,attitude,behavior,character,personality,ability,skill,talent,effort,success,failure,mistake,challenge,competition,victory,progress,development,growth,change,improvement,increase,decrease,amount,quality,quantity,average,distance,direction,location,area,region,border,traffic,transportation,journey,destination,luggage,passenger,tourist,vacation,festival,ceremony,event,audience,performance,exhibition,article,magazine,novel,author,memory,dream,future,period,century,deadline,rule,law,crime,police,court,duty,responsibility,freedom,peace,war,disaster,earthquake,climate,temperature,pollution,energy,resource,material,machine,equipment,tool,furniture,neighborhood,apartment,rent,hypothesis,phenomenon,perspective,criterion,consensus,controversy,dilemma,paradox,prejudice,stereotype,discrimination,inequality,poverty,welfare,legislation,regulation,policy,strategy,initiative,incentive,obstacle,constraint,deficit,surplus,inflation,recession,revenue,expenditure,subsidy,tariff,monopoly,merger,bankruptcy,liability,asset,infrastructure,sustainability,biodiversity,ecosystem,emission,drought,famine,epidemic,symptom,diagnosis,therapy,immunity,heritage,ideology,democracy,sovereignty,diplomacy,treaty,sanction,conflict,refugee,casualty,integrity,dignity,empathy,resentment,anxiety,nostalgia,ambition,perseverance,negotiation,compromise,collaboration,implication,assumption,evidence,analysis,interpretation,innovation", "v": "go,come,eat,drink,see,look,hear,listen,speak,talk,say,tell,read,write,buy,sell,give,take,make,do,have,get,want,need,like,love,know,think,understand,learn,study,teach,work,play,run,walk,sit,stand,sleep,wake,open,close,start,stop,finish,help,ask,wait,meet,call,send,bring,carry,put,use,find,lose,try,wash,clean,cook,cut,wear,pay,live,stay,leave,arrive,turn,move,swim,sing,dance,draw,laugh,cry,smile,remember,forget,improve,decide,recommend,suggest,explain,describe,discuss,agree,disagree,argue,complain,apologize,allow,refuse,accept,reject,invite,introduce,attend,join,participate,prepare,arrange,organize,manage,develop,produce,provide,deliver,order,cancel,confirm,reserve,apply,hire,retire,quit,earn,spend,save,borrow,lend,afford,invest,reduce,expand,grow,replace,repair,fix,break,destroy,build,create,design,invent,discover,explore,search,compare,choose,prefer,consider,imagine,believe,doubt,expect,hope,wish,worry,fear,surprise,disappoint,encourage,support,protect,prevent,avoid,solve,achieve,succeed,fail,win,compete,practice,recover,suffer,hurt,notice,recognize,realize,mention,announce,share,communicate,contact,reply,translate,graduate,belong,depend,include,contain,require,receive,return,continue,complete,delay,hurry,miss,follow,lead,sustain,emphasize,deteriorate,allocate,accumulate,acquire,advocate,alleviate,anticipate,articulate,assess,attribute,comply,conceal,concede,condemn,confront,consolidate,constitute,contemplate,contradict,convey,cultivate,deprive,derive,designate,deter,diminish,disclose,dismiss,disrupt,distinguish,distort,dominate,eliminate,embrace,enforce,enhance,ensure,erode,evaluate,exaggerate,exceed,exploit,facilitate,fluctuate,foster,fulfill,generate,hinder,illustrate,implement,imply,impose,incorporate,infer,inhibit,integrate,interfere,intervene,justify,manipulate,mitigate,monitor,neglect,negotiate,obtain,overcome,oversee,perceive,persuade,postpone,precede,prevail,prohibit,provoke,pursue,reconcile,reinforce,relinquish,replicate,resolve,restrain,retain,retrieve,scrutinize,speculate,stimulate,substitute,suppress,surpass,tolerate,transform,undermine,undertake,verify,violate,withdraw,withstand,yield,abolish,adhere,compensate,compile,conform,coincide,contaminate,depict,elaborate,encounter,endorse,eradicate,formulate,hamper,initiate,jeopardize,perpetuate,rectify,refute,reiterate,resemble,revoke,safeguard,streamline,supplement,terminate,trigger,unveil,uphold,utilize,validate,waive", "adj": "big,small,long,short,tall,new,old,young,good,bad,hot,cold,warm,cool,happy,sad,angry,tired,hungry,thirsty,busy,free,easy,difficult,fast,slow,early,late,cheap,expensive,dirty,heavy,light,strong,weak,rich,poor,beautiful,pretty,kind,nice,funny,quiet,loud,safe,dangerous,full,empty,right,wrong,same,different,important,famous,sick,healthy,delicious,sweet,dark,bright,available,necessary,possible,impossible,common,rare,popular,traditional,modern,ancient,foreign,local,public,private,personal,professional,serious,simple,similar,various,recent,previous,correct,convenient,comfortable,exciting,boring,nervous,confident,proud,polite,rude,honest,friendly,inevitable,comprehensive,ambiguous,reluctant,abundant,scarce,adequate,sufficient,substantial,significant,crucial,vital,essential,fundamental,profound,subtle,obvious,apparent,evident,explicit,implicit,abstract,concrete,arbitrary,consistent,coherent,contradictory,controversial,conventional,innovative,obsolete,contemporary,temporary,permanent,preliminary,subsequent,simultaneous,spontaneous,deliberate,voluntary,mandatory,optional,feasible,plausible,credible,reliable,vulnerable,fragile,resilient,rigid,flexible,diverse,distinct,identical,equivalent,relevant,appropriate,accurate,precise,vague,transparent,cautious,reckless,diligent,competent,proficient,eloquent,arrogant,humble,hostile,indifferent,compassionate,skeptical,optimistic,pessimistic,ambitious,persistent,stubborn,sincere,notorious,prominent,prestigious,lucrative", "adv": "always,usually,often,sometimes,never,again,together,alone,here,there,now,soon,very,really,maybe,already,still,also,only,almost,quickly,slowly,carefully,recently,immediately,suddenly,especially,probably,finally,gradually,instead,approximately,ultimately,predominantly,presumably,allegedly,consequently,nevertheless,furthermore,conversely,likewise,merely,solely,virtually,seemingly,thoroughly,drastically,accordingly,notably"}};
+var POSDICT={ja:{},en:{}};
+['ja','en'].forEach(function(l){Object.keys(POSMAP[l]).forEach(function(c){POSMAP[l][c].split(',').forEach(function(x){POSDICT[l][x]=c;});});});
 var MAX_RETRY=2;
-function W(w,m,e,t,p){return {word:w,meaning:m,example:e||'',trans:t||'',pron:p||''};}
+function W(w,m,e,t,p,pos){return {word:w,meaning:m,example:e||'',trans:t||'',pron:p||'',pos:pos||''};}
 var SAMPLE={
  ja:[[
   W('学校(がっこう)','학교','毎日(まいにち)学校(がっこう)に行(い)きます。','매일 학교에 갑니다.'),
@@ -228,14 +251,16 @@ var DEFAULT_SHEETS={
   en:['1ltp3GVGaclu_jtoakX_9SOZVGA_nCMMAN8RQhypozuo','1EjfnFGD8vqrz-5epZVEiuJqyGl0LC-0pDqll669rSMA','1egVy75b97A9mxnUN36sQ77I7Megp9m07bJf9m2x71uU']
 };
 var settings=load('vq.settings',{showReading:true,count:10});
+var IDIOM_SHEET=SHEET_BASE+'1l8JDF9EJ6LNJNtzdQtNLG_EfudOX_Cfq_7chCvQRgz8';
 if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
   settings.sheets={ja:DEFAULT_SHEETS.ja.map(function(i){return SHEET_BASE+i;}),en:DEFAULT_SHEETS.en.map(function(i){return SHEET_BASE+i;})};
 }
+if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
 var progress=load('vq.progress',{});
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
 if(!data.src)data.src={ja:'sample',en:'sample'};
-var S={lang:'ja',level:0,view:'list',query:'',open:null,status:null,q:null,confirmReset:false};
+var S={lang:'ja',level:0,pos:'all',view:'list',query:'',open:null,status:null,q:null,confirmReset:false};
 
 /* ---------- 요미가나: 漢字(かんじ) → 한자 위 표기 ---------- */
 var RUBY=/([一-鿿々]+)[(（]([ぁ-ゖァ-ヺー]+)[)）]/g;
@@ -246,6 +271,83 @@ function kana(s){return String(s).replace(RUBY,'$2');}
 function key(lang,w){return lang+'|'+plain(w.word);}
 function statusOf(lang,w){return progress[key(lang,w)]||'new';}
 function words(){return (data[S.lang]&&data[S.lang][S.level])||[];}
+
+/* ---------- 품사 ---------- */
+function parsePos(t,lang){
+  t=String(t||'').replace(/\s/g,'');if(!t)return '';
+  if(t.indexOf('숙어')>=0)return 'idiom';
+  if(t.indexOf('동사')>=0){if(lang==='en')return 'v';var m=/[123]/.exec(t);return 'v'+(m?m[0]:'1');}
+  if(/い|이형용사/.test(t))return 'i';
+  if(/な|나형용사/.test(t))return 'na';
+  if(t.indexOf('형용사')>=0)return lang==='ja'?'i':'adj';
+  if(t.indexOf('부사')>=0)return 'adv';
+  if(t.indexOf('명사')>=0&&t.indexOf('대명사')<0)return 'n';
+  return 'etc';
+}
+function posOf(lang,w){return w.pos||POSDICT[lang][plain(w.word)]||'etc';}
+function posGroup(p){return p.charAt(0)==='v'?'v':p==='idiom'?'etc':p;}
+function posBadge(lang,w){var p=posOf(lang,w);return p==='etc'?'':'<span class="pos">'+POS_LABEL[lang][p]+'</span>';}
+function studyList(){var l=words();if(S.pos==='all')return l;return l.filter(function(w){return posGroup(posOf(S.lang,w))===S.pos;});}
+
+/* ---------- 일본어 활용 ---------- */
+var G1={'う':'わいえお','く':'かきけこ','ぐ':'がぎげご','す':'さしせそ','つ':'たちてと','ぬ':'なにねの','ぶ':'ばびべぼ','む':'まみめも','る':'らりれろ'};
+var TE={'う':'って','つ':'って','る':'って','ぬ':'んで','む':'んで','ぶ':'んで','く':'いて','ぐ':'いで','す':'して'};
+function verbForms(word,pos){
+  var s=word.slice(0,-1),k=word.slice(-1);
+  if(pos==='v3'){
+    var m=/^(.*)来[(（]く[)）]る$/.exec(word);
+    if(m||word==='くる'){var p=m?m[1]:'',kk=function(r){return p+(m?'来('+r+')':r);};
+      return {nai:kk('こ')+'ない',masu:kk('き')+'ます',dict:kk('く')+'る',mei:kk('こ')+'い',ba:kk('く')+'れば',you:kk('こ')+'よう',te:kk('き')+'て',ta:kk('き')+'た'};}
+    if(!/する$/.test(word))return null;
+    var b=word.slice(0,-2);
+    return {nai:b+'しない',masu:b+'します',dict:b+'する',mei:b+'しろ',ba:b+'すれば',you:b+'しよう',te:b+'して',ta:b+'した'};
+  }
+  if(pos==='v2'){if(k!=='る')return null;return {nai:s+'ない',masu:s+'ます',dict:word,mei:s+'ろ',ba:s+'れば',you:s+'よう',te:s+'て',ta:s+'た'};}
+  var r=G1[k];if(!r)return null;
+  var te=/行[(（]い[)）]く$/.test(word)?'って':TE[k];
+  return {nai:s+r[0]+'ない',masu:s+r[1]+'ます',dict:word,mei:s+r[2],ba:s+r[2]+'ば',you:s+r[3]+'う',te:s+te,ta:s+te.replace('て','た').replace('で','だ')};
+}
+function conjTable(title,rows){return '<div class="conj"><b>'+title+'</b><dl>'+rows.map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+ruby(r[1],true)+'</dd></div>';}).join('')+'</dl></div>';}
+function conjHtml(w,pos){
+  var word=w.word,s,rows;
+  if(pos.charAt(0)==='v'){
+    var f=verbForms(word,pos);if(!f)return '';
+    return conjTable('기본 변형',[['정중형',f.masu],['현재 부정',f.nai],['과거 (た형)',f.ta],['과거 부정',f.nai.replace(/ない$/,'なかった')],['연결형 (て형)',f.te],['명사 수식',f.dict+'人(ひと)']])+
+      conjTable('동사의 기본 7활용',[['① 미연형 ~하지 않다',f.nai],['② 연용형 ~합니다',f.masu],['③ 종지형 ~하다',f.dict],['④ 연체형 ~하는',f.dict+'時(とき)'],['⑤ 명령형 ~해',f.mei],['⑥ 가정형 ~하면',f.ba],['⑦ 의지형 ~하자',f.you]]);
+  }
+  if(pos==='i'){
+    if(!/い$/.test(word))return '';s=word.slice(0,-1);
+    rows=[['정중형',word+'です'],['현재 부정',s+'くない'],['과거',s+'かった'],['과거 부정',s+'くなかった'],['부사형',s+'く'],['연결형',s+'くて'],['명사 수식',word+' + 명사'],['과거 수식',s+'かった + 명사']];
+  }else if(pos==='na'){
+    rows=[['정중형',word+'です'],['현재 부정',word+'じゃない'],['과거',word+'だった'],['과거 부정',word+'じゃなかった'],['부사형',word+'に'],['연결형',word+'で'],['명사 수식',word+'な + 명사'],['과거 수식',word+'だった + 명사']];
+  }else return '';
+  return conjTable('기본 변형',rows);
+}
+function viewGrammar(){
+  function T(head,rows){return '<div class="fmt-wrap"><table class="fmt g"><tr>'+head.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return (i?'<td>':'<th>')+ruby(c,true)+(i?'</td>':'</th>');}).join('')+'</tr>';}).join('')+'</table></div>';}
+  function N(t){return '<p class="note ja">'+ruby(t,true)+'</p>';}
+  return '<section class="panel"><h2>품사 구분</h2>'+T(['품사','구분법','예'],[
+    ['い형용사','い로 끝남','高(たか)い 비싸다 · 安(やす)い 싸다'],['な형용사','だ로 끝남 (형용동사)','静(しず)かだ 조용하다 · きれいだ 예쁘다'],
+    ['동사 1그룹','2·3그룹이 아닌 나머지 전부','書(か)く 쓰다 · 飲(の)む 마시다 · 帰(かえ)る 돌아가다'],['동사 2그룹','る로 끝나고 る 앞이 い단·え단','見(み)る 보다 · 食(た)べる 먹다'],['동사 3그룹','단 2개','する 하다 · くる 오다']])+'</section>'+
+  '<section class="panel"><h2>품사 × 변형 비교표</h2>'+T(['품사','정중형','현재 부정','과거','과거 부정','부사형','연결형','현재 수식','과거 수식'],[
+    ['い형용사','高(たか)いです','高(たか)くない','高(たか)かった','高(たか)くなかった','高(たか)く','高(たか)くて','高(たか)い本(ほん)','高(たか)かった本(ほん)'],
+    ['な형용사','静(しず)かです','静(しず)かじゃない','静(しず)かだった','静(しず)かじゃなかった','静(しず)かに','静(しず)かで','静(しず)かな部屋(へや)','静(しず)かだった部屋(へや)'],
+    ['동사 1그룹','書(か)きます','書(か)かない','書(か)いた','書(か)かなかった','—','書(か)いて','書(か)く人(ひと)','書(か)いた人(ひと)'],
+    ['동사 2그룹','食(た)べます','食(た)べない','食(た)べた','食(た)べなかった','—','食(た)べて','食(た)べる人(ひと)','食(た)べた人(ひと)'],
+    ['동사 3그룹','します / きます','しない / こない','した / きた','しなかった / こなかった','—','して / きて','する人(ひと) / くる人(ひと)','した人(ひと) / きた人(ひと)']])+
+    N('예외 ① いい(좋다)는 활용할 때 よい로 바뀝니다: よくない · よかった · よく · よくて')+N('예외 ② 行(い)く는 く로 끝나지만 음편은 っ: 行(い)った · 行(い)って')+
+    N('1그룹 예외: 2그룹처럼 생겼지만 1그룹 — 帰(かえ)る · 入(はい)る · 走(はし)る · 知(し)る')+N('명사는 な형용사와 거의 같습니다. 단, 명사를 꾸밀 때는 な 대신 の: 学生(がくせい)の本(ほん)')+'</section>'+
+  '<section class="panel"><h2>음편형 규칙</h2><p class="note">1그룹 동사에 た·て가 붙을 때 발음을 편하게 바꿉니다. 2그룹은 る를 빼고 た/て, 3그룹은 した/して, きた/きて.</p>'+T(['끝 글자','바뀌는 꼴','예'],[
+    ['う · つ · る','った / って','買(か)う→買(か)った · 待(ま)つ→待(ま)った · 帰(かえ)る→帰(かえ)った'],['ぬ · む · ぶ','んだ / んで','死(し)ぬ→死(し)んだ · 飲(の)む→飲(の)んだ · 遊(あそ)ぶ→遊(あそ)んだ'],
+    ['く / ぐ','いた / いだ','書(か)く→書(か)いた · 泳(およ)ぐ→泳(およ)いだ'],['す','した / して','話(はな)す→話(はな)した'],['行(い)く (예외)','行(い)った / 行(い)って','く인데 いた가 아니라 った']])+
+    T(['음편형 구문','뜻','行(い)く 기준'],[['~た','~했다','行(い)った'],['~て','~하고','行(い)って'],['~てから','~하고 나서','行(い)ってから'],['~ている','~하고 있다','行(い)っている'],['~てしまう','~해 버리다','行(い)ってしまう'],['~てください','~해 주세요','行(い)ってください'],['~てもいいです','~해도 좋습니다','行(い)ってもいいです'],['~てはいけません','~해서는 안 됩니다','行(い)ってはいけません'],['~たりします','~하기도 합니다','行(い)ったりします'],['~たら','~하면','行(い)ったら']])+'</section>'+
+  '<section class="panel"><h2>동사의 기본 7활용</h2>'+T(['활용','뜻','1그룹 규칙','1그룹','2그룹','する','くる'],[
+    ['① 미연형','~하지 않다 (부정)','あ단+ない','行(い)かない','食(た)べない','しない','こない'],['② 연용형','~합니다 (정중)','い단+ます','行(い)きます','食(た)べます','します','きます'],
+    ['③ 종지형','~하다 (문장 끝)','う단 (원형)','行(い)く','食(た)べる','する','くる'],['④ 연체형','~하는 (명사 수식)','う단+명사','行(い)く人(ひと)','食(た)べる物(もの)','する事(こと)','くる人(ひと)'],
+    ['⑤ 명령형','~해 (명령)','え단','行(い)け','食(た)べろ','しろ','こい'],['⑥ 가정형','~하면','え단+ば','行(い)けば','食(た)べれば','すれば','くれば'],['⑦ 의지형','~하자, ~하려고','お단+う','行(い)こう','食(た)べよう','しよう','こよう']])+
+    N('기억 고리: 1그룹은 あ·い·う·う·え·え·お 계단을 순서대로 오릅니다. 2그룹은 る만 떼고 꼬리를 붙입니다 (ない·ます·ろ·れば·よう).')+'</section>'+
+  '<section class="panel"><h2>조사 19개</h2>'+T(['조사','뜻','메모'],[['は','~은, ~는','발음은 わ'],['が','~이, ~가',''],['を','~을, ~를',''],['と','~와, ~과',''],['に','~에, ~에게','장소·대상'],['へ','~(으)로','방향 · 발음은 え'],['で','~에서 / ~(으)로 / ~해서','장소 / 수단 / 이유'],['から','~부터','시작점'],['まで','~까지','끝점'],['か','~인가','불확실'],['や','~와, ~랑','일부만 열거'],['も','~도',''],['など','~등',''],['くらい','~정도',''],['ばかり','~만, ~뿐',''],['ので','~이기 때문에','객관적 이유'],['から','~이기 때문에','주관적 이유'],['より','~보다','비교'],['の','~의 / ~의 것','명사+の+명사']])+'</section>';
+}
 
 /* ---------- 발음 듣기 ---------- */
 var canSpeak=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
@@ -274,17 +376,20 @@ function renderTabs(){
   var quiz=S.view==='quiz';
   document.getElementById('tab-lang').hidden=quiz;document.getElementById('tab-level').hidden=quiz;
   document.getElementById('btn-settings').textContent=S.view==='settings'?'단어 목록으로':'시트 연결·설정';
+  document.getElementById('btn-grammar').textContent=S.view==='grammar'?'단어 목록으로':'일본어 문법 표';
+  document.getElementById('lv-idiom').hidden=S.lang!=='en';
 }
 function render(){
   renderTabs();
   if(S.view==='quiz')app.innerHTML=viewQuiz();
   else if(S.view==='result')app.innerHTML=viewResult();
   else if(S.view==='settings')app.innerHTML=viewSettings();
+  else if(S.view==='grammar')app.innerHTML=viewGrammar();
   else app.innerHTML=viewList();
   app.style.cssText='display:flex;flex-direction:column;gap:14px';
 }
 function viewList(){
-  var list=words(),c={ok:0,retry:0,'new':0};
+  var list=studyList(),c={ok:0,retry:0,'new':0};
   list.forEach(function(w){c[statusOf(S.lang,w)]++;});
   var q=S.query.trim().toLowerCase();
   var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){
@@ -297,6 +402,9 @@ function viewList(){
     '<span><i class="dot new"></i>안 본 단어 <b>'+c['new']+'</b></span>'+
     (data.src[S.lang]==='sample'?'<span class="sample-tag">샘플 단어</span>':'')+
     '</div><button type="button" class="cta" data-act="start"'+(list.length?'':' disabled')+'>퀴즈 시작</button></section>';
+  var cnt={};words().forEach(function(w){var g=posGroup(posOf(S.lang,w));cnt[g]=(cnt[g]||0)+1;});
+  var chips=POS_FILTER[S.lang].filter(function(f){return f[0]==='all'||cnt[f[0]];});
+  if(chips.length>2)h+='<div class="chips" role="group" aria-label="품사 선택">'+chips.map(function(f){return '<button type="button" class="chip" data-pos="'+f[0]+'" aria-pressed="'+(S.pos===f[0])+'">'+f[1]+(f[0]==='all'?'':' <b>'+cnt[f[0]]+'</b>')+'</button>';}).join('')+'</div>';
   h+='<section class="panel"><label class="search" for="q-search"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
     '<input id="q-search" type="search" placeholder="단어·뜻 검색" value="'+esc(S.query)+'" autocomplete="off"></label></section>';
   h+='<section class="grid" id="grid">'+gridHtml(shown,list.length)+'</section>';
@@ -310,12 +418,12 @@ function gridHtml(shown,total){
     var h='<article class="card '+st+(open?' open':'')+'"><button type="button" class="card-head" data-open="'+esc(k)+'" aria-expanded="'+open+'">'+
       '<span class="card-main"><span>'+wordHtml(w,S.lang,settings.showReading)+'<span class="num">'+('00'+(o.i+1)).slice(-3)+'</span></span>'+
       (S.lang==='en'&&w.pron&&settings.showReading?'<span class="pron"> ['+esc(w.pron)+']</span>':'')+
-      '<span class="sub" style="display:block">'+esc(w.meaning)+'</span></span>'+
+      '<span class="sub" style="display:block">'+posBadge(S.lang,w)+esc(w.meaning)+'</span></span>'+
       '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
     if(open){
       h+='<div class="card-body">'+(S.lang==='ja'&&!settings.showReading?'<div class="pron">읽기: '+esc(kana(w.word))+'</div>':'')+
         (S.lang==='en'&&w.pron&&!settings.showReading?'<div class="pron">발음: '+esc(w.pron)+'</div>':'')+
-        (exampleHtml(w,S.lang,true,true)||'<div class="ex-t">예문이 없습니다.</div>')+
+        (exampleHtml(w,S.lang,true,true)||'<div class="ex-t">예문이 없습니다.</div>')+(S.lang==='ja'?conjHtml(w,posOf('ja',w)):'')+
         '<div class="row" style="flex:none">'+speakBtn(w.word,'단어 듣기')+(w.example?speakBtn(w.example,'예문 듣기'):'')+'</div></div>';
     }
     return h+'</article>';
@@ -351,7 +459,7 @@ function viewQuiz(){
   var h='<div class="q-top"><span class="q-count">'+(q.i+1)+' / '+n+'</span><div class="bar"><i style="width:'+Math.round((q.i+(q.done?1:0))/n*100)+'%"></i></div>'+
     '<button type="button" class="q-quit" data-act="quit">그만하기</button></div>';
   h+='<section class="panel q-word"><div class="q-ask">이 단어의 뜻은?</div>'+wordHtml(w,lang,showR)+
-    (lang==='en'&&w.pron&&showR?'<div class="pron">['+esc(w.pron)+']</div>':'')+
+    (lang==='en'&&w.pron&&showR?'<div class="pron">['+esc(w.pron)+']</div>':'')+'<div>'+posBadge(lang,w)+'</div>'+
     '<div class="chances" aria-label="다시 맞춰보기 남은 기회 '+Math.max(0,MAX_RETRY-q.tries)+'번">다시 맞춰보기 기회';
   for(var i=0;i<MAX_RETRY;i++)h+='<i class="'+(i<q.tries?'used':'')+'"></i>';
   h+='</div></section><div aria-live="polite">';
@@ -419,7 +527,7 @@ function viewSettings(){
     '<p class="note">언어와 난이도마다 구글 시트를 하나씩 씁니다(모두 6개). 각 시트는 “링크가 있는 모든 사용자 · 뷰어”로 공유되어 있어야 하고, 첫 줄은 아래 제목 줄이어야 합니다. 시트에서 단어를 고친 뒤 아래 버튼을 누르면 반영됩니다.</p>'+
     '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="4">일본어 시트</th></tr><tr><td>단어</td><td>뜻</td><td>예문</td><td>예문 해석</td></tr><tr><td>勉強(べんきょう)</td><td>공부</td><td>毎日(まいにち)勉強(べんきょう)します。</td><td>매일 공부합니다.</td></tr></table></div>'+
     '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="5">영어 시트</th></tr><tr><td>단어</td><td>발음</td><td>뜻</td><td>예문</td><td>예문 해석</td></tr><tr><td>schedule</td><td>스케줄</td><td>일정</td><td>Let me check my schedule.</td><td>일정을 확인해 볼게요.</td></tr></table></div>'+
-    ['ja','en'].map(function(l){return LEVELS.map(function(name,i){
+    ['ja','en'].map(function(l){return levelsOf(l).map(function(name,i){
       return '<div class="field"><label for="in-s-'+l+'-'+i+'">'+(l==='ja'?'일본어':'영어')+' '+name+' 시트 주소</label><input id="in-s-'+l+'-'+i+'" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/..." value="'+esc(settings.sheets[l][i]||'')+'"></div>';}).join('');}).join('')+
     '<button type="button" class="cta block" data-act="fetch">시트에서 단어 불러오기</button>'+st+'</section>'+
     '<section class="panel"><h2>붙여넣기로 가져오기</h2>'+
@@ -447,12 +555,13 @@ function parseCSV(text){
 function rowsToItems(rows,lang){
   rows=rows.filter(function(r){return r.some(function(c){return String(c).trim();});});
   if(!rows.length)return [];
-  var idx=lang==='ja'?{word:0,meaning:1,example:2,trans:3,pron:-1}:{word:0,pron:1,meaning:2,example:3,trans:4};
+  var idx=lang==='ja'?{word:0,meaning:1,example:2,trans:3,pron:-1,pos:-1}:{word:0,pron:1,meaning:2,example:3,trans:4,pos:-1};
   var head=rows[0].map(function(c){return String(c).replace(/\s/g,'');});
   if(head.some(function(c){return c.indexOf('단어')>=0;})){
-    idx={word:-1,meaning:-1,example:-1,trans:-1,pron:-1};
+    idx={word:-1,meaning:-1,example:-1,trans:-1,pron:-1,pos:-1};
     head.forEach(function(c,i){
-      if(/해석|번역/.test(c))idx.trans=i;
+      if(c.indexOf('품사')>=0)idx.pos=i;
+      else if(/해석|번역/.test(c))idx.trans=i;
       else if(c.indexOf('예문')>=0)idx.example=i;
       else if(c.indexOf('발음')>=0)idx.pron=i;
       else if(/뜻|의미/.test(c))idx.meaning=i;
@@ -461,7 +570,7 @@ function rowsToItems(rows,lang){
     rows=rows.slice(1);
   }
   function g(r,i){return i>=0&&r[i]!=null?String(r[i]).trim():'';}
-  return rows.map(function(r){return W(g(r,idx.word),g(r,idx.meaning),g(r,idx.example),g(r,idx.trans),g(r,idx.pron));})
+  return rows.map(function(r){return W(g(r,idx.word),g(r,idx.meaning),g(r,idx.example),g(r,idx.trans),g(r,idx.pron),parsePos(g(r,idx.pos),lang));})
     .filter(function(w){return w.word&&w.meaning;});
 }
 function sheetId(url){var m=/\/d\/([\w-]{20,})/.exec(url||'');return m?m[1]:null;}
@@ -481,7 +590,8 @@ function doFetch(){
   Promise.all(jobs.map(function(j){
     var label=(j[0]==='ja'?'일본어 ':'영어 ')+LEVELS[j[1]];
     return fetchSheet(j[0],j[2]).then(function(items){
-      if(!got[j[0]]&&data.src[j[0]]==='sample'){next[j[0]]=[[],[],[]];}
+      if(!got[j[0]]&&data.src[j[0]]==='sample'){next[j[0]]=levelsOf(j[0]).map(function(){return [];});}
+      if(j[0]==='en'&&j[1]===3)items.forEach(function(w){if(!w.pos)w.pos='idiom';});
       got[j[0]]=true;next[j[0]][j[1]]=items;lines.push(label+': '+items.length+'개');
     },function(e){ok=false;
       lines.push(label+': 불러오지 못했습니다. '+(e&&e.message&&!/fetch|network|load/i.test(e.message)?e.message:'시트 공유가 “링크가 있는 모든 사용자”인지 확인하세요. Claude 안에서 열었다면 외부 연결이 막혀 있습니다.'));});
@@ -494,22 +604,24 @@ function doPaste(){
   var rows=t.split(/\r?\n/).map(function(l){return l.split('\t');});
   var items=rowsToItems(rows,S.lang);
   if(!items.length){S.status={ok:false,text:'단어를 찾지 못했습니다. 단어와 뜻 칸이 포함되도록 복사했는지 확인하세요.'};return render();}
-  if(data.src[S.lang]==='sample'){data[S.lang]=[[],[],[]];data.src[S.lang]='paste';}
+  if(data.src[S.lang]==='sample'){data[S.lang]=levelsOf(S.lang).map(function(){return [];});data.src[S.lang]='paste';}
   data[S.lang]=data[S.lang].slice();data[S.lang][S.level]=items;save('vq.data',data);
   S.status={ok:true,text:(S.lang==='ja'?'일본어':'영어')+' '+LEVELS[S.level]+'에 '+items.length+'개를 넣었습니다.'};render();
 }
 
 /* ---------- 이벤트 ---------- */
-document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;S.lang=b.dataset.lang;S.open=null;S.query='';if(S.view==='result')S.view='list';render();});
-document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;S.level=+b.dataset.level;S.open=null;S.query='';if(S.view==='result')S.view='list';render();});
+document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;S.lang=b.dataset.lang;if(S.lang!=='en'&&S.level>2)S.level=0;S.pos='all';S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;S.level=+b.dataset.level;S.pos='all';S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+document.getElementById('btn-grammar').addEventListener('click',function(){if(S.view==='quiz')return;S.view=S.view==='grammar'?'list':'grammar';render();window.scrollTo(0,0);});
 document.getElementById('btn-settings').addEventListener('click',function(){S.view=S.view==='settings'?'list':'settings';S.status=null;S.confirmReset=false;render();});
 app.addEventListener('click',function(e){
-  var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act]');if(!t)return;
+  var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act],[data-pos]');if(!t)return;
+  if(t.dataset.pos!=null){S.pos=t.dataset.pos;S.open=null;return render();}
   if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang);
   if(t.dataset.open!=null){S.open=S.open===t.dataset.open?null:t.dataset.open;return render();}
   if(t.dataset.choice!=null)return pick(+t.dataset.choice);
   var a=t.dataset.act;
-  if(a==='start')startQuiz(words());
+  if(a==='start')startQuiz(studyList());
   else if(a==='next'){if(S.q.i+1<S.q.items.length){S.q.i++;nextQuestion();render();window.scrollTo(0,0);}else{S.view='result';render();window.scrollTo(0,0);}}
   else if(a==='quit'){S.view=S.q.results.length?'result':'list';render();}
   else if(a==='again'){S.lang=S.q.lang;startQuiz(S.q.results.filter(function(r){return r.r!=='ok';}).map(function(r){return r.w;}),true);}
@@ -521,7 +633,7 @@ app.addEventListener('click',function(e){
 });
 app.addEventListener('input',function(e){
   var id=e.target.id;
-  if(id==='q-search'){S.query=e.target.value;var list=words(),q=S.query.trim().toLowerCase();
+  if(id==='q-search'){S.query=e.target.value;var list=studyList(),q=S.query.trim().toLowerCase();
     var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){var w=o.w;return !q||(plain(w.word)+' '+kana(w.word)+' '+w.meaning+' '+w.pron).toLowerCase().indexOf(q)>=0;});
     document.getElementById('grid').innerHTML=gridHtml(shown,list.length);}
   else if(id.indexOf('in-s-')===0){var pp=id.split('-');settings.sheets[pp[2]][+pp[3]]=e.target.value;save('vq.settings',settings);}
@@ -531,7 +643,7 @@ app.addEventListener('change',function(e){
   else if(e.target.id==='in-count'){settings.count=+e.target.value;save('vq.settings',settings);}
 });
 render();
-if(data.src.ja==='sample'||data.src.en==='sample')doFetch();
+if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length))doFetch();
 })();
 </script>
 </body>
