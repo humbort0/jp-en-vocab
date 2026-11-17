@@ -64,9 +64,11 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .card{border-radius:var(--radius);background:var(--grey);color:var(--grey-ink)}
 .card.ok{background:var(--mint);color:var(--ink)}
 .card.retry{background:var(--cream);color:var(--ink)}
+.card.mark{background:#f6ff8f;color:var(--ink);box-shadow:inset 0 0 0 2px #dfe94e}
 .card.open{grid-column:1/-1}
-.card-head{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:14px 12px 14px 16px;min-height:76px}
-.card-main{flex:1;min-width:0}
+.card-head{display:flex;align-items:stretch;width:100%;min-height:76px}
+.card-more{flex:none;display:flex;align-items:center;padding:0 12px 0 8px;color:inherit}
+.card-main{flex:1;min-width:0;text-align:left;padding:14px 4px 14px 16px;color:inherit}
 .word{font-weight:900;font-size:1.32rem;line-height:1.9;overflow-wrap:anywhere}
 .word.ja{font-family:var(--font-ja)}
 .num{font-size:.8rem;font-weight:500;opacity:.7;margin-left:6px;font-variant-numeric:tabular-nums}
@@ -261,6 +263,7 @@ if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
 }
 if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
 var progress=load('vq.progress',{});
+var marks=load('vq.marks',{});
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
 if(!data.src)data.src={ja:'sample',en:'sample'};
@@ -419,11 +422,12 @@ function gridHtml(shown,total){
   if(!shown.length)return '<p class="empty">검색 결과가 없습니다.</p>';
   return shown.map(function(o){
     var w=o.w,st=statusOf(S.lang,w),k=key(S.lang,w),open=S.open===k;
-    var h='<article class="card '+st+(open?' open':'')+'"><button type="button" class="card-head" data-open="'+esc(k)+'" aria-expanded="'+open+'">'+
-      '<span class="card-main"><span>'+wordHtml(w,S.lang,settings.showReading)+'</span>'+
+    var h='<article class="card '+st+(marks[k]?' mark':'')+(open?' open':'')+'"><div class="card-head"><button type="button" class="card-main" data-mark="'+esc(k)+'" aria-pressed="'+!!marks[k]+'">'+
+      '<span>'+wordHtml(w,S.lang,settings.showReading)+'</span>'+
       (S.lang==='en'&&w.pron&&settings.showReading?'<span class="pron"> ['+esc(w.pron)+']</span>':'')+
-      '<span class="sub" style="display:block">'+posBadge(S.lang,w)+esc(w.meaning)+'</span></span>'+
-      '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+      '<span class="sub" style="display:block">'+posBadge(S.lang,w)+esc(w.meaning)+'</span></button>'+
+      '<button type="button" class="card-more" data-open="'+esc(k)+'" aria-expanded="'+open+'" aria-label="예문과 활용 보기">'+
+      '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>';
     if(open){
       h+='<div class="card-body">'+(S.lang==='ja'&&!settings.showReading?'<div class="pron">읽기: '+esc(kana(w.word))+'</div>':'')+
         (S.lang==='en'&&w.pron&&!settings.showReading?'<div class="pron">발음: '+esc(w.pron)+'</div>':'')+
@@ -619,7 +623,9 @@ document.getElementById('tab-level').addEventListener('click',function(e){var b=
 document.getElementById('btn-grammar').addEventListener('click',function(){if(S.view==='quiz')return;S.view=S.view==='grammar'?'list':'grammar';render();window.scrollTo(0,0);});
 document.getElementById('btn-settings').addEventListener('click',function(){S.view=S.view==='settings'?'list':'settings';S.status=null;S.confirmReset=false;render();});
 app.addEventListener('click',function(e){
-  var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act],[data-pos]');if(!t)return;
+  var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act],[data-pos],[data-mark]');if(!t)return;
+  if(t.dataset.mark!=null){var mk=t.dataset.mark;if(marks[mk])delete marks[mk];else marks[mk]=1;save('vq.marks',marks);
+    t.setAttribute('aria-pressed',String(!!marks[mk]));t.closest('.card').classList.toggle('mark',!!marks[mk]);return;}
   if(t.dataset.pos!=null){S.pos=t.dataset.pos;S.open=null;return render();}
   if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang);
   if(t.dataset.open!=null){S.open=S.open===t.dataset.open?null:t.dataset.open;return render();}
