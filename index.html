@@ -136,6 +136,16 @@ table.fmt{border-collapse:collapse;font-size:.8rem;width:100%}
 .fmt-wrap{overflow-x:auto;margin-bottom:10px}
 table.fmt th,table.fmt td{border:1px solid var(--grey);padding:6px 8px;text-align:left;white-space:nowrap}
 table.fmt th{background:var(--mint-soft)}
+.sheets{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--grey)}
+.sheets li{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--grey)}
+.sheets li:first-child{border-top:0}
+.sh-name{flex:1;font-weight:700}
+.sh-n{color:var(--ink-soft);font-size:.9rem;font-variant-numeric:tabular-nums}
+.sh-open{font-size:.85rem;font-weight:700;color:var(--mint-deep);white-space:nowrap;padding:6px 0}
+.sh-open.off{color:var(--grey-ink)}
+.more{margin-top:12px;border-top:1px solid var(--grey);padding-top:10px}
+.more summary{cursor:pointer;font-weight:700;padding:6px 0;color:var(--ink-soft)}
+.more[open] summary{margin-bottom:8px}
 .check{display:flex;align-items:center;gap:10px;font-weight:700;margin-bottom:12px}
 .check input{width:22px;height:22px;accent-color:var(--pink-a)}
 .sample-tag{font-size:.8rem;background:var(--cream);color:#9a5a12;border-radius:999px;padding:4px 10px;font-weight:700}
@@ -566,13 +576,24 @@ function viewResult(){
 /* ---------- 설정·시트 ---------- */
 function viewSettings(){
   var st=S.status?'<div class="status '+(S.status.ok?'fine':'err')+'" role="status">'+esc(S.status.text)+'</div>':'';
+  var rows=['ja','en'].map(function(l){return levelsOf(l).map(function(name,i){
+      var u=settings.sheets[l][i]||'',n=(data[l]&&data[l][i])?data[l][i].length:0,from=data.src[l]==='sheet';
+      return '<li><span class="sh-name">'+(l==='ja'?'일본어':'영어')+' '+name+'</span><span class="sh-n">'+(from?n+'개':'—')+'</span>'+
+        (u?'<a class="sh-open" href="'+esc(u)+'" target="_blank" rel="noopener">시트 열기 ↗</a>':'<span class="sh-open off">주소 없음</span>')+'</li>';}).join('');}).join('');
   return '<section class="panel"><h2>구글 시트에서 불러오기</h2>'+
-    '<p class="note">언어와 난이도마다 구글 시트를 하나씩 씁니다(모두 6개). 각 시트는 “링크가 있는 모든 사용자 · 뷰어”로 공유되어 있어야 하고, 첫 줄은 아래 제목 줄이어야 합니다. 시트에서 단어를 고친 뒤 아래 버튼을 누르면 반영됩니다.</p>'+
-    '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="4">일본어 시트</th></tr><tr><td>단어</td><td>뜻</td><td>예문</td><td>예문 해석</td></tr><tr><td>勉強(べんきょう)</td><td>공부</td><td>毎日(まいにち)勉強(べんきょう)します。</td><td>매일 공부합니다.</td></tr></table></div>'+
-    '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="5">영어 시트</th></tr><tr><td>단어</td><td>발음</td><td>뜻</td><td>예문</td><td>예문 해석</td></tr><tr><td>schedule</td><td>스케줄</td><td>일정</td><td>Let me check my schedule.</td><td>일정을 확인해 볼게요.</td></tr></table></div>'+
+    '<p class="note">단어장은 구글 시트 7개(일본어 3개, 영어 4개)에서 불러옵니다. 시트에서 단어를 고치거나 추가한 뒤 아래 버튼을 누르면 앱에 반영됩니다.</p>'+
+    '<ul class="sheets">'+rows+'</ul>'+
+    '<button type="button" class="cta block" data-act="fetch">시트에서 단어 불러오기</button>'+st+
+    '<details class="more"><summary>시트 양식 보기</summary>'+
+    '<p class="note">첫 줄은 아래 제목 줄이어야 합니다. 순서는 바뀌어도 되고, 품사·유의어·반의어는 비워 둬도 됩니다. 유의어·반의어가 여러 개면 쉼표로 나눠 적습니다.</p>'+
+    '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="7">일본어 시트</th></tr><tr><td>단어</td><td>뜻</td><td>예문</td><td>예문 해석</td><td>품사</td><td>유의어</td><td>반의어</td></tr><tr><td>勉強(べんきょう)</td><td>공부</td><td>毎日(まいにち)勉強(べんきょう)します。</td><td>매일 공부합니다.</td><td>명사</td><td>学習(がくしゅう)</td><td></td></tr></table></div>'+
+    '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="8">영어 시트</th></tr><tr><td>단어</td><td>발음</td><td>뜻</td><td>예문</td><td>예문 해석</td><td>품사</td><td>유의어</td><td>반의어</td></tr><tr><td>cheap</td><td>칩</td><td>값싼</td><td>This bag is cheap.</td><td>이 가방은 싸다.</td><td>형용사</td><td>inexpensive</td><td>expensive</td></tr></table></div>'+
+    '<p class="note">품사 칸에 적는 말: 명사 · 동사1 · 동사2 · 동사3 · い형용사 · な형용사 · 부사 (영어는 명사 · 동사 · 형용사 · 부사 · 숙어). 일본어 단어와 예문의 요미가나는 한자 바로 뒤 괄호에 적습니다.</p></details>'+
+    '<details class="more"><summary>시트 주소 바꾸기</summary>'+
+    '<p class="note">다른 시트를 쓰고 싶을 때만 바꾸세요. 시트는 “링크가 있는 모든 사용자 · 뷰어”로 공유되어 있어야 합니다.</p>'+
     ['ja','en'].map(function(l){return levelsOf(l).map(function(name,i){
-      return '<div class="field"><label for="in-s-'+l+'-'+i+'">'+(l==='ja'?'일본어':'영어')+' '+name+' 시트 주소</label><input id="in-s-'+l+'-'+i+'" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/..." value="'+esc(settings.sheets[l][i]||'')+'"></div>';}).join('');}).join('')+
-    '<button type="button" class="cta block" data-act="fetch">시트에서 단어 불러오기</button>'+st+'</section>'+
+      return '<div class="field"><label for="in-s-'+l+'-'+i+'">'+(l==='ja'?'일본어':'영어')+' '+name+'</label><input id="in-s-'+l+'-'+i+'" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/..." value="'+esc(settings.sheets[l][i]||'')+'"></div>';}).join('');}).join('')+
+    '</details></section>'+
     '<section class="panel"><h2>붙여넣기로 가져오기</h2>'+
     '<p class="note">시트 주소로 불러올 수 없을 때 씁니다. 구글 시트에서 제목 줄을 포함해 칸을 복사한 뒤 아래에 붙여넣으세요. 지금 선택된 <b>'+(S.lang==='ja'?'일본어':'영어')+' · '+LEVELS[S.level]+'</b> 단어장으로 들어갑니다.</p>'+
     '<div class="field"><label for="in-paste">복사한 칸 붙여넣기</label><textarea id="in-paste" spellcheck="false"></textarea></div>'+
