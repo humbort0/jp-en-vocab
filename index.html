@@ -268,12 +268,12 @@ var progress=load('vq.progress',{});
 var marks=load('vq.marks',{});
 settings.pct=settings.pct||(settings.count===0?100:5);
 function quizSize(n){return n?Math.max(1,Math.round(n*settings.pct/100)):0;}
-function pctText(){var n=studyList().length;return settings.pct+'% · 약 '+quizSize(n)+'문제 ('+(S.lang==='ja'?'일본어':'영어')+' '+(S.pos==='mark'?'형광펜':LEVELS[S.level])+(S.pos==='all'?'':' '+POS_FILTER[S.lang].filter(function(f){return f[0]===S.pos;}).map(function(f){return f[1];}).join(''))+' '+n+'개 기준)';}
+function pctText(){var n=studyList().length;return settings.pct+'% · 약 '+quizSize(n)+'문제 ('+(S.lang==='ja'?'일본어':'영어')+' '+filterLabel()+' '+n+'개 기준)';}
 settings.repWord=settings.repWord||1;settings.repEx=settings.repEx||1;
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
 if(!data.src)data.src={ja:'sample',en:'sample'};
-var S={lang:'ja',level:0,pos:'all',view:'list',query:'',open:null,status:null,q:null,confirmReset:false};
+var S={lang:'ja',level:0,mark:false,pg:{},view:'list',query:'',open:null,status:null,q:null,confirmReset:false};
 
 /* ---------- 요미가나: 漢字(かんじ) → 한자 위 표기 ---------- */
 var RUBY=/([一-鿿々]+)[(（]([ぁ-ゖァ-ヺー]+)[)）]/g;
@@ -301,7 +301,10 @@ function posOf(lang,w){return w.pos||POSDICT[lang][plain(w.word)]||'etc';}
 function posGroup(p){return p.charAt(0)==='v'?'v':p==='idiom'?'etc':p;}
 function posBadge(lang,w){var p=posOf(lang,w);return p==='etc'?'':'<span class="pos">'+POS_LABEL[lang][p]+'</span>';}
 function markedList(){var seen={};return [].concat.apply([],data[S.lang]||[]).filter(function(w){var k=key(S.lang,w);if(!marks[k]||seen[k])return false;seen[k]=1;return true;});}
-function studyList(){if(S.pos==='mark')return markedList();var l=words();if(S.pos==='all')return l;return l.filter(function(w){return posGroup(posOf(S.lang,w))===S.pos;});}
+function baseList(){return S.mark?markedList():words();}
+function anyPos(){return Object.keys(S.pg).length>0;}
+function studyList(){var l=baseList();if(!anyPos())return l;return l.filter(function(w){return S.pg[posGroup(posOf(S.lang,w))];});}
+function filterLabel(){var a=POS_FILTER[S.lang].filter(function(f){return S.pg[f[0]];}).map(function(f){return f[1];});return (S.mark?'형광펜':LEVELS[S.level])+(a.length?' '+a.join('+'):'');}
 
 /* ---------- 일본어 활용 ---------- */
 var G1={'う':'わいえお','く':'かきけこ','ぐ':'がぎげご','す':'さしせそ','つ':'たちてと','ぬ':'なにねの','ぶ':'ばびべぼ','む':'まみめも','る':'らりれろ'};
@@ -404,7 +407,7 @@ function render(){
   app.style.cssText='display:flex;flex-direction:column;gap:14px';
 }
 function viewList(){
-  if(S.pos==='mark'&&!markedList().length){S.pos='all';autoHalt();}
+  if(S.mark&&!markedList().length){S.mark=false;autoHalt();}
   var list=studyList(),c={ok:0,retry:0,'new':0};
   list.forEach(function(w){c[statusOf(S.lang,w)]++;});
   var q=S.query.trim().toLowerCase();
@@ -418,12 +421,13 @@ function viewList(){
     '<span><i class="dot new"></i>안 본 단어 <b>'+c['new']+'</b></span>'+
     (data.src[S.lang]==='sample'?'<span class="sample-tag">샘플 단어</span>':'')+
     '</div><button type="button" class="cta" data-act="start"'+(list.length?'':' disabled')+'>퀴즈 시작</button></section>';
-  var cnt={};words().forEach(function(w){var g=posGroup(posOf(S.lang,w));cnt[g]=(cnt[g]||0)+1;});
-  var chips=POS_FILTER[S.lang].filter(function(f){return f[0]==='all'||cnt[f[0]];});
+  var cnt={};baseList().forEach(function(w){var g=posGroup(posOf(S.lang,w));cnt[g]=(cnt[g]||0)+1;});
+  var chips=POS_FILTER[S.lang].filter(function(f){return f[0]==='all'||cnt[f[0]]||S.pg[f[0]];});
   cnt.mark=markedList().length;if(cnt.mark)chips.push(['mark','형광펜']);
-  if(chips.length>1)h+='<div class="chips" role="group" aria-label="품사 선택">'+chips.map(function(f){return '<button type="button" class="chip" data-pos="'+f[0]+'" aria-pressed="'+(S.pos===f[0])+'">'+f[1]+(f[0]==='all'?'':' <b>'+cnt[f[0]]+'</b>')+'</button>';}).join('')+'</div>';
-  if(S.pos==='mark')h+='<button type="button" class="cta block" data-act="auto">'+(auto.on?'■ 자동 읽기 멈추기 ('+(auto.i+1)+' / '+list.length+')':'▶ 형광펜 단어 자동 읽기 ('+list.length+'개)')+'</button>'+
-    '<p class="note" style="margin:0">모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다.</p>';
+  var on=function(k){return k==='all'?(!S.mark&&!anyPos()):k==='mark'?S.mark:!!S.pg[k];};
+  if(chips.length>1)h+='<div class="chips" role="group" aria-label="품사 선택 (여러 개 선택 가능)">'+chips.map(function(f){return '<button type="button" class="chip" data-pos="'+f[0]+'" aria-pressed="'+on(f[0])+'">'+f[1]+(f[0]==='all'?'':' <b>'+(cnt[f[0]]||0)+'</b>')+'</button>';}).join('')+'</div>';
+  if(S.mark)h+='<button type="button" class="cta block" data-act="auto">'+(auto.on?'■ 자동 읽기 멈추기 ('+(auto.i+1)+' / '+list.length+')':'▶ '+filterLabel()+' 자동 읽기 ('+list.length+'개)')+'</button>'+
+    '<p class="note" style="margin:0">모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 품사 버튼을 함께 누르면 그 품사만 남습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다.</p>';
   h+='<section class="panel"><label class="search" for="q-search"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
     '<input id="q-search" type="search" placeholder="단어·뜻 검색" value="'+esc(S.query)+'" autocomplete="off"></label></section>';
   h+='<section class="grid" id="grid">'+gridHtml(shown,list.length)+'</section>';
@@ -649,7 +653,7 @@ function speakSeq(parts,lang,done){
 function autoStep(){
   if(!auto.on)return;
   var list=studyList();
-  if(S.view!=='list'||S.pos!=='mark'||auto.i>=list.length)return autoStop();
+  if(S.view!=='list'||!S.mark||auto.i>=list.length)return autoStop();
   var w=list[auto.i],tk=auto.token;
   S.open=key(S.lang,w);render();
   var el=app.querySelector('.card.open');
@@ -666,14 +670,16 @@ function autoStep(){
 function autoStart(){try{window.speechSynthesis.cancel();}catch(e){}auto.on=true;auto.i=0;auto.token++;autoStep();}
 
 /* ---------- 이벤트 ---------- */
-document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.lang=b.dataset.lang;if(S.lang!=='en'&&S.level>2)S.level=0;S.pos='all';S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
-document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.level=+b.dataset.level;S.pos='all';S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.lang=b.dataset.lang;if(S.lang!=='en'&&S.level>2)S.level=0;S.mark=false;S.pg={};S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.level=+b.dataset.level;S.mark=false;S.pg={};S.open=null;S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
 document.getElementById('btn-grammar').addEventListener('click',function(){if(S.view==='quiz')return;autoHalt();S.view=S.view==='grammar'?'list':'grammar';render();window.scrollTo(0,0);});
 document.getElementById('btn-settings').addEventListener('click',function(){autoHalt();S.view=S.view==='settings'?'list':'settings';S.status=null;S.confirmReset=false;render();});
 app.addEventListener('click',function(e){
   var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act],[data-pos],[data-mark]');if(!t)return;
   if(t.dataset.mark!=null){var mk=t.dataset.mark;if(marks[mk])delete marks[mk];else marks[mk]=1;save('vq.marks',marks);return render();}
-  if(t.dataset.pos!=null){autoHalt();S.pos=t.dataset.pos;S.open=null;return render();}
+  if(t.dataset.pos!=null){autoHalt();var pk=t.dataset.pos;
+    if(pk==='all'){S.mark=false;S.pg={};}else if(pk==='mark')S.mark=!S.mark;else if(S.pg[pk])delete S.pg[pk];else S.pg[pk]=1;
+    S.open=null;return render();}
   if(t.dataset.speak!=null){autoHalt();}
   if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang,t.dataset.kind==='ex'?settings.repEx:settings.repWord);
   if(t.dataset.open!=null){autoHalt();S.open=S.open===t.dataset.open?null:t.dataset.open;return render();}
