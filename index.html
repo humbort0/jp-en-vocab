@@ -156,6 +156,13 @@ table.fmt th{background:var(--mint-soft)}
 .conj dd{margin:0;font-weight:700;line-height:2;font-family:var(--font-ja);overflow-wrap:anywhere}
 table.g td,table.g th{line-height:2;font-family:var(--font-ja)}
 table.g td{font-weight:700}
+.rels{display:flex;flex-direction:column;gap:6px}
+.rels>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.rels b{min-width:3.2em}
+.rel-row{display:flex;flex-wrap:wrap;gap:6px}
+.rel{background:var(--surface);border-radius:999px;padding:4px 12px;font-weight:700;line-height:1.9;box-shadow:inset 0 0 0 1px var(--mint)}
+.rel .ja{font-family:var(--font-ja)}
+.rel small{font-weight:500;color:var(--ink-soft)}
 .note.ja{line-height:2}
 @media (max-width:339px){.grid{grid-template-columns:1fr}}
 @media (min-width:800px){.hero-in,.wrap{max-width:760px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -190,7 +197,7 @@ var POSMAP={"ja": {"n": "今日,明日,昨日,毎日,今,朝,昼,夜,午前,午�
 var POSDICT={ja:{},en:{}};
 ['ja','en'].forEach(function(l){Object.keys(POSMAP[l]).forEach(function(c){POSMAP[l][c].split(',').forEach(function(x){POSDICT[l][x]=c;});});});
 var MAX_RETRY=2;
-function W(w,m,e,t,p,pos){return {word:w,meaning:m,example:e||'',trans:t||'',pron:p||'',pos:pos||''};}
+function W(w,m,e,t,p,pos,syn,ant){return {word:w,meaning:m,example:e||'',trans:t||'',pron:p||'',pos:pos||'',syn:syn||'',ant:ant||''};}
 var SAMPLE={
  ja:[[
   W('学校(がっこう)','학교','毎日(まいにち)学校(がっこう)に行(い)きます。','매일 학교에 갑니다.'),
@@ -255,15 +262,17 @@ function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}c
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 var SHEET_BASE='https://docs.google.com/spreadsheets/d/';
 var DEFAULT_SHEETS={
-  ja:['1qXBu21miZHrodZ8KWceHk-gAxIfZW3f6buABMWIbUlg','1O_tJdRKx3vhOGCQwBdXteyYTl1PImatondaGF5AHERM','1RZ2PfIBj1bBnf7jg65og3jyZshOnQi4P0CY4gk85Ew8'],
-  en:['1ltp3GVGaclu_jtoakX_9SOZVGA_nCMMAN8RQhypozuo','1EjfnFGD8vqrz-5epZVEiuJqyGl0LC-0pDqll669rSMA','1egVy75b97A9mxnUN36sQ77I7Megp9m07bJf9m2x71uU']
+  ja:['13IJBgDOOUaMZRI7N8hpxJ5gNSNyo-QeyzfETDCyBRsQ','1GGUs9Lhr2yt57NQ5gwtnWYEcV-rGll1xhPSYDKSt8_8','1sThQFi0pGI_RT0p7jzAmlRpwUpekABdqCoF8YHm4dJk'],
+  en:['1GnM2ukGxmcIVAcw9qDHleORLdZCeHcPvkHMrrEJsdBk','1W2ewtTUhUjYpmGGQhXFVsYmtuZNRf7BtTCj-Om9SKiA','19eJFLHtee1r2hEPM48YGEoSsPtXhDFnW6i_D8UdKwWU']
 };
 var settings=load('vq.settings',{showReading:true,count:10});
-var IDIOM_SHEET=SHEET_BASE+'1l8JDF9EJ6LNJNtzdQtNLG_EfudOX_Cfq_7chCvQRgz8';
+var IDIOM_SHEET=SHEET_BASE+'19IebN8mnkU_ubIjDIYPXBtRqeLYAeiIkxW2NELgFuXU';
 if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
   settings.sheets={ja:DEFAULT_SHEETS.ja.map(function(i){return SHEET_BASE+i;}),en:DEFAULT_SHEETS.en.map(function(i){return SHEET_BASE+i;})};
 }
 if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
+var SHEET_MOVED={"1qXBu21miZHrodZ8KWceHk-gAxIfZW3f6buABMWIbUlg": "13IJBgDOOUaMZRI7N8hpxJ5gNSNyo-QeyzfETDCyBRsQ", "1O_tJdRKx3vhOGCQwBdXteyYTl1PImatondaGF5AHERM": "1GGUs9Lhr2yt57NQ5gwtnWYEcV-rGll1xhPSYDKSt8_8", "1RZ2PfIBj1bBnf7jg65og3jyZshOnQi4P0CY4gk85Ew8": "1sThQFi0pGI_RT0p7jzAmlRpwUpekABdqCoF8YHm4dJk", "1ltp3GVGaclu_jtoakX_9SOZVGA_nCMMAN8RQhypozuo": "1GnM2ukGxmcIVAcw9qDHleORLdZCeHcPvkHMrrEJsdBk", "1EjfnFGD8vqrz-5epZVEiuJqyGl0LC-0pDqll669rSMA": "1W2ewtTUhUjYpmGGQhXFVsYmtuZNRf7BtTCj-Om9SKiA", "1egVy75b97A9mxnUN36sQ77I7Megp9m07bJf9m2x71uU": "19eJFLHtee1r2hEPM48YGEoSsPtXhDFnW6i_D8UdKwWU", "1l8JDF9EJ6LNJNtzdQtNLG_EfudOX_Cfq_7chCvQRgz8": "19IebN8mnkU_ubIjDIYPXBtRqeLYAeiIkxW2NELgFuXU"};
+['ja','en'].forEach(function(l){settings.sheets[l]=settings.sheets[l].map(function(u){var m=/\/d\/([\w-]{20,})/.exec(u||'');return m&&SHEET_MOVED[m[1]]?SHEET_BASE+SHEET_MOVED[m[1]]:u;});});
 var progress=load('vq.progress',{});
 var marks=load('vq.marks',{});
 settings.pct=settings.pct||(settings.count===0?100:5);
@@ -323,6 +332,14 @@ function verbForms(word,pos){
   var r=G1[k];if(!r)return null;
   var te=/行[(（]い[)）]く$/.test(word)?'って':TE[k];
   return {nai:s+r[0]+'ない',masu:s+r[1]+'ます',dict:word,mei:s+r[2],ba:s+r[2]+'ば',you:s+r[3]+'う',te:s+te,ta:s+te.replace('て','た').replace('で','だ')};
+}
+function relHtml(lang,w){
+  function list(t){return String(t||'').split(/[,、，]/).map(function(x){return x.trim();}).filter(Boolean);}
+  var dict={};[].concat.apply([],data[lang]||[]).forEach(function(x){dict[plain(x.word).toLowerCase()]=x.meaning;});
+  function item(x){var m=dict[plain(x).toLowerCase()];
+    return '<button type="button" class="rel" data-speak="'+esc(x)+'" data-kind="word"><span class="'+(lang==='ja'?'ja':'')+'">'+ruby(x,lang==='ja')+'</span>'+(m?' <small>'+esc(m)+'</small>':'')+'</button>';}
+  var s=list(w.syn),a=list(w.ant);if(!s.length&&!a.length)return '';
+  return '<div class="conj rels">'+(s.length?'<div><b>유의어</b><span class="rel-row">'+s.map(item).join('')+'</span></div>':'')+(a.length?'<div><b>반의어</b><span class="rel-row">'+a.map(item).join('')+'</span></div>':'')+'</div>';
 }
 function conjTable(title,rows){return '<div class="conj"><b>'+title+'</b><dl>'+rows.map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+ruby(r[1],true)+'</dd></div>';}).join('')+'</dl></div>';}
 function conjHtml(w,pos){
@@ -449,7 +466,7 @@ function gridHtml(shown,total){
     if(open){
       h+='<div class="card-body">'+(S.lang==='ja'&&!settings.showReading?'<div class="pron">읽기: '+esc(kana(w.word))+'</div>':'')+
         (S.lang==='en'&&w.pron&&!settings.showReading?'<div class="pron">발음: '+esc(w.pron)+'</div>':'')+
-        (exampleHtml(w,S.lang,true,true)||'<div class="ex-t">예문이 없습니다.</div>')+(S.lang==='ja'?conjHtml(w,posOf('ja',w)):'')+
+        (exampleHtml(w,S.lang,true,true)||'<div class="ex-t">예문이 없습니다.</div>')+relHtml(S.lang,w)+(S.lang==='ja'?conjHtml(w,posOf('ja',w)):'')+
         '<div class="row" style="flex:none">'+speakBtn(w.word,'단어 듣기')+(w.example?speakBtn(w.example,'예문 듣기'):'')+'</div></div>';
     }
     return h+'</article>';
@@ -583,12 +600,14 @@ function parseCSV(text){
 function rowsToItems(rows,lang){
   rows=rows.filter(function(r){return r.some(function(c){return String(c).trim();});});
   if(!rows.length)return [];
-  var idx=lang==='ja'?{word:0,meaning:1,example:2,trans:3,pron:-1,pos:-1}:{word:0,pron:1,meaning:2,example:3,trans:4,pos:-1};
+  var idx=lang==='ja'?{word:0,meaning:1,example:2,trans:3,pron:-1,pos:-1,syn:-1,ant:-1}:{word:0,pron:1,meaning:2,example:3,trans:4,pos:-1,syn:-1,ant:-1};
   var head=rows[0].map(function(c){return String(c).replace(/\s/g,'');});
   if(head.some(function(c){return c.indexOf('단어')>=0;})){
-    idx={word:-1,meaning:-1,example:-1,trans:-1,pron:-1,pos:-1};
+    idx={word:-1,meaning:-1,example:-1,trans:-1,pron:-1,pos:-1,syn:-1,ant:-1};
     head.forEach(function(c,i){
-      if(c.indexOf('품사')>=0)idx.pos=i;
+      if(c.indexOf('유의')>=0||c.indexOf('동의')>=0)idx.syn=i;
+      else if(c.indexOf('반의')>=0||c.indexOf('반대')>=0)idx.ant=i;
+      else if(c.indexOf('품사')>=0)idx.pos=i;
       else if(/해석|번역/.test(c))idx.trans=i;
       else if(c.indexOf('예문')>=0)idx.example=i;
       else if(c.indexOf('발음')>=0)idx.pron=i;
@@ -598,7 +617,7 @@ function rowsToItems(rows,lang){
     rows=rows.slice(1);
   }
   function g(r,i){return i>=0&&r[i]!=null?String(r[i]).trim():'';}
-  return rows.map(function(r){return W(g(r,idx.word),g(r,idx.meaning),g(r,idx.example),g(r,idx.trans),g(r,idx.pron),parsePos(g(r,idx.pos),lang));})
+  return rows.map(function(r){return W(g(r,idx.word),g(r,idx.meaning),g(r,idx.example),g(r,idx.trans),g(r,idx.pron),parsePos(g(r,idx.pos),lang),g(r,idx.syn),g(r,idx.ant));})
     .filter(function(w){return w.word&&w.meaning;});
 }
 function sheetId(url){var m=/\/d\/([\w-]{20,})/.exec(url||'');return m?m[1]:null;}
@@ -625,6 +644,7 @@ function doFetch(){
       lines.push(label+': 불러오지 못했습니다. '+(e&&e.message&&!/fetch|network|load/i.test(e.message)?e.message:'시트 공유가 “링크가 있는 모든 사용자”인지 확인하세요. Claude 안에서 열었다면 외부 연결이 막혀 있습니다.'));});
   })).then(function(){
     ['ja','en'].forEach(function(l){if(got[l]){data[l]=next[l];data.src[l]='sheet';}});
+    if(ok)data.v=2;
     save('vq.data',data);lines.sort();S.status={ok:ok,text:lines.join('\n')};render();});
 }
 function doPaste(){
@@ -718,7 +738,7 @@ app.addEventListener('change',function(e){
 });
 render();
 try{if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
-if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length))doFetch();
+if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length)||data.v!==2)doFetch();
 })();
 </script>
 </body>
