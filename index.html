@@ -685,7 +685,8 @@ app.addEventListener('click',function(e){
   if(t.dataset.speak!=null){autoHalt();}
   if(t.dataset.speak!=null)return speak(t.dataset.speak,S.view==='quiz'?S.q.lang:S.lang,t.dataset.kind==='ex'?settings.repEx:settings.repWord);
   if(t.dataset.open!=null){autoHalt();var ok=t.dataset.open,was=!!S.opened[ok];
-    if(!S.mark)S.opened={};if(was)delete S.opened[ok];else S.opened[ok]=1;return render();}
+    if(!S.mark)Object.keys(S.opened).forEach(function(x){if(x!==ok&&!marks[x])delete S.opened[x];});
+    if(was)delete S.opened[ok];else S.opened[ok]=1;return render();}
   if(t.dataset.choice!=null)return pick(+t.dataset.choice);
   var a=t.dataset.act;
   if(a==='auto')return auto.on?autoStop():autoStart();
