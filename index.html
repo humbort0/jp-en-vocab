@@ -43,7 +43,7 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .hero-btn{background:rgba(255,255,255,.22);color:#fff;font-weight:700;font-size:.9rem;padding:10px 16px;border-radius:999px;white-space:nowrap}
 .wrap{padding:0 16px 48px;margin-top:-30px;display:flex;flex-direction:column;gap:14px}
 .pill{background:var(--surface);border-radius:999px;padding:6px;display:flex;gap:6px;box-shadow:var(--shadow)}
-.pill button{flex:1;padding:14px 8px;border-radius:999px;font-weight:900;font-size:1.05rem;color:var(--ink-soft)}
+.pill button{flex:1;padding:14px 6px;word-break:keep-all;border-radius:999px;font-weight:900;font-size:1.05rem;color:var(--ink-soft)}
 .pill button[aria-pressed="true"]{background:linear-gradient(100deg,var(--pink-a),var(--pink-b));color:#fff;box-shadow:0 4px 10px rgba(196,64,124,.3)}
 .pill.level button{padding:10px 8px;font-size:.95rem;font-weight:700}
 .pill.level button[aria-pressed="true"]{background:var(--mint);color:var(--ink);box-shadow:none}
@@ -173,6 +173,10 @@ table.g td{font-weight:700}
 .rels>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
 .rels b{min-width:3.2em}
 .rel-row{display:flex;flex-wrap:wrap;gap:6px}
+.pt-p{margin:4px 0 0;line-height:1.9;font-size:.95rem;overflow-wrap:anywhere}
+.ex-n{display:inline-block;font-size:.72rem;font-weight:900;color:#fff;background:var(--pink-b);border-radius:999px;padding:0 8px;margin-right:6px}
+.ex .row{margin-top:6px}
+.hw{font-size:.85rem;color:var(--ink-soft)}
 .rel{background:var(--surface);border-radius:999px;padding:4px 12px;font-weight:700;line-height:1.9;box-shadow:inset 0 0 0 1px var(--mint)}
 .rel .ja{font-family:var(--font-ja)}
 .rel small{font-weight:500;color:var(--ink-soft)}
@@ -189,6 +193,7 @@ table.g td{font-weight:700}
 <main class="wrap">
   <div class="pill" id="tab-lang" role="group" aria-label="언어 선택">
     <button type="button" data-lang="ja">일본어</button>
+    <button type="button" data-lang="jp">일본어 패턴</button>
     <button type="button" data-lang="en">영어</button>
   </div>
   <div class="pill level" id="tab-level" role="group" aria-label="난이도 선택">
@@ -203,11 +208,22 @@ table.g td{font-weight:700}
 (function(){
 'use strict';
 var LEVELS=['초급','중급','고급','숙어'];
-function levelsOf(l){return l==='en'?LEVELS:LEVELS.slice(0,3);}
-var POS_LABEL={ja:{n:'명사',v1:'동사 1그룹',v2:'동사 2그룹',v3:'동사 3그룹',i:'い형용사',na:'な형용사',adv:'부사',etc:'기타'},en:{n:'명사',v:'동사',adj:'형용사',adv:'부사',idiom:'숙어',etc:'기타'}};
-var POS_FILTER={ja:[['all','전체'],['n','명사'],['v','동사'],['i','い형용사'],['na','な형용사'],['adv','부사'],['etc','기타']],en:[['all','전체'],['n','명사'],['v','동사'],['adj','형용사'],['adv','부사'],['etc','기타']]};
+function levelsOf(l){return l==='en'?LEVELS:l==='jp'?['패턴']:LEVELS.slice(0,3);}
+var THEMES=['기초인사 및 자기소개','식당','쇼핑하기','여행 및 관광','일상생활','학교 및 교육','직장 및 업무','가족 및 관계','건강 및 의료','문화 및 행사'];
+var THEME_SHORT=['인사·자기소개','식당','쇼핑','여행·관광','일상생활','학교·교육','직장·업무','가족·관계','건강·의료','문화·행사'];
+var LANG_NAME={ja:'일본어',jp:'일본어 패턴',en:'영어'};
+var LANGS=['ja','jp','en'];
+function isJa(l){return l==='ja'||l==='jp';}
+function lv(){return S.lang==='jp'?0:S.level;}
+function sheetLabel(l,i){return l==='jp'?'일본어 패턴':LANG_NAME[l]+' '+LEVELS[i];}
+function parseTheme(t){t=String(t||'').replace(/\s/g,'');if(!t)return 'etc';
+  for(var i=0;i<THEMES.length;i++){if(t===THEMES[i].replace(/\s/g,'')||t===THEME_SHORT[i].replace(/\s/g,''))return 't'+i;}
+  for(i=0;i<THEMES.length;i++){var k=THEME_SHORT[i].split('·')[0];if(t.indexOf(k)>=0)return 't'+i;}
+  return 'etc';}
+var POS_LABEL={jp:(function(){var o={etc:'기타'};THEMES.forEach(function(n,i){o['t'+i]=n;});return o;})(),ja:{n:'명사',v1:'동사 1그룹',v2:'동사 2그룹',v3:'동사 3그룹',i:'い형용사',na:'な형용사',adv:'부사',etc:'기타'},en:{n:'명사',v:'동사',adj:'형용사',adv:'부사',idiom:'숙어',etc:'기타'}};
+var POS_FILTER={jp:[['all','전체']].concat(THEME_SHORT.map(function(n,i){return ['t'+i,n];}),[['etc','기타']]),ja:[['all','전체'],['n','명사'],['v','동사'],['i','い형용사'],['na','な형용사'],['adv','부사'],['etc','기타']],en:[['all','전체'],['n','명사'],['v','동사'],['adj','형용사'],['adv','부사'],['etc','기타']]};
 var POSMAP={"ja": {"n": "今日,明日,昨日,毎日,今,朝,昼,夜,午前,午後,今週,来週,先週,今年,来年,去年,時間,週末,誕生日,休み,春,夏,秋,冬,一つ,一人,二人,半分,全部,最初,最後,私,友達,家族,父,母,兄,姉,弟,妹,子供,大人,先生,学生,名前,医者,会社員,店員,夫,妻,彼,彼女,皆さん,外国人,両親,祖父,祖母,人,頭,顔,目,耳,口,手,足,体,歯,お腹,声,髪,食べ物,飲み物,水,お茶,牛乳,ご飯,肉,魚,野菜,果物,卵,砂糖,塩,お酒,朝ご飯,昼ご飯,晩ご飯,料理,お菓子,弁当,味,コーヒー,パン,学校,会社,家,部屋,駅,病院,銀行,郵便局,図書館,公園,店,食堂,教室,大学,国,町,道,空港,映画館,喫茶店,入口,出口,台所,庭,建物,交番,本屋,お手洗い,隣,近く,上,下,中,外,前,後ろ,右,左,本,机,椅子,窓,電話,時計,財布,傘,靴,服,帽子,眼鏡,鍵,紙,鉛筆,辞書,新聞,雑誌,手紙,写真,切符,お金,荷物,冷蔵庫,電気,お風呂,箱,皿,薬,テレビ,かばん,天気,雨,雪,風,空,山,川,海,花,木,犬,猫,鳥,動物,色,電車,車,自転車,飛行機,地下鉄,船,バス,タクシー,勉強,宿題,試験,質問,仕事,日本語,英語,言葉,漢字,意味,映画,音楽,歌,旅行,買い物,散歩,掃除,洗濯,病気,風邪,約束,経験,準備,説明,連絡,相談,予定,予約,計画,会議,出張,残業,給料,上司,同僚,部下,就職,面接,資料,書類,報告,確認,変更,中止,延期,参加,出席,欠席,遅刻,注文,配達,値段,割引,無料,有料,支払い,現金,領収書,交換,返事,招待,紹介,案内,利用,使用,禁止,許可,注意,危険,安全,事故,火事,地震,台風,気温,季節,環境,自然,景色,観光,文化,習慣,伝統,歴史,経済,政治,社会,法律,規則,教育,技術,科学,研究,発表,成績,合格,卒業,入学,授業,復習,予習,練習,試合,優勝,趣味,興味,関心,感動,緊張,心配,安心,我慢,努力,成功,失敗,目的,目標,理由,原因,結果,影響,関係,状況,場合,方法,意見,賛成,反対,比較,選択,決定,判断,想像,記憶,感想,態度,性格,気分,感情,健康,症状,治療,手術,入院,退院,睡眠,栄養,体重,身長,年齢,人口,増加,減少,平均,割合,合計,距離,速度,温度,交通,渋滞,運転,免許,到着,出発,乗り換え,往復,片道,宿泊,引っ越し,家賃,近所,家事,修理,故障,製品,商品,品質,材料,輸出,輸入,貿易,生活,場所,問題,自分,世界,把握,妥協,貢献,懸念,概念,矛盾,偏見,先入観,傾向,現象,要因,根拠,前提,仮説,検証,分析,考察,指摘,批判,評価,見解,主張,説得,交渉,合意,契約,締結,撤回,是正,改善,改革,推進,促進,抑制,規制,緩和,廃止,導入,実施,施行,遂行,達成,維持,確保,獲得,喪失,崩壊,衰退,繁栄,発展,普及,浸透,拡大,縮小,削減,負担,赤字,黒字,景気,不況,需要,供給,投資,融資,利益,損失,賠償,補償,福祉,介護,少子化,高齢化,格差,貧困,差別,人権,義務,権利,責任,倫理,道徳,良心,尊重,配慮,遠慮,信頼,裏切り,誤解,偏り,葛藤,動揺,衝撃,憤り,嫉妬,後悔,反省,覚悟,決断,躊躇,挑戦,克服,忍耐,執着,意欲,意図,意識,認識,自覚,錯覚,直感,洞察,教養,素質,才能,業績,功績,名誉,権威,権力,支配,紛争,対立,摩擦,措置,対策,対応,対処,模索,追求,究明,解明,立証,証拠,証言,訴訟,判決,違反,犯罪,逮捕,被害,災害,避難,復興,支援,寄付,奉仕,汚染,排出,資源,枯渇,温暖化,生態系,絶滅,遺伝,細胞,免疫,感染,副作用,診断", "v1": "行く,帰る,飲む,聞く,読む,書く,話す,買う,売る,会う,待つ,働く,休む,遊ぶ,泳ぐ,歩く,走る,乗る,座る,立つ,入る,作る,使う,持つ,知る,分かる,習う,思う,言う,住む,洗う,脱ぐ,貸す,送る,始まる,終わる,歌う,撮る,切る,呼ぶ,手伝う,止まる,曲がる,渡る,困る,減る,変わる,決まる,届く,集まる,選ぶ,続く,頑張る,育つ,守る,壊す,直す,治る,落とす,拾う,並ぶ,運ぶ,動く,押す,引く,回す,触る,握る,受け取る,渡す,払う,断る,謝る,叱る,怒る,笑う,泣く,驚く,悲しむ,迷う,疑う,思い出す,気づく,間に合う,急ぐ,通う,通る,戻る,向かう,近づく,招く,誘う,付き合う,違う,余る,残る,残す,済む,進む,上がる,下がる,乾く,表す,示す,頼む,促す,担う,養う,培う,賄う,補う,償う,挑む,臨む,携わる,怠る,侮る,欺く,脅かす,阻む,拒む,退く,譲る,託す,潤す,費やす,損なう,滞る,志す,悟る,諭す,励ます,嘆く,悔やむ,惜しむ,慕う,敬う,罵る,呟く,囁く,叫ぶ,黙る,偽る,装う,繕う,覆う,覆す,翻す,揺らぐ,漂う,潜む,絡む,伴う,及ぼす,及ぶ,至る,遡る,辿る,赴く,施す,募る,絞る,砕く,削る,磨く,練る,凝る,凌ぐ,陥る,尽くす,果たす,喜ぶ,悩む", "v2": "食べる,見る,起きる,寝る,降りる,出る,開ける,閉める,教える,覚える,忘れる,着る,借りる,答える,疲れる,出かける,比べる,増える,変える,決める,伝える,届ける,集める,調べる,確かめる,続ける,始める,止める,諦める,慣れる,育てる,助ける,壊れる,捨てる,片付ける,並べる,投げる,受ける,預ける,褒める,信じる,感じる,考える,間違える,遅れる,離れる,訪ねる,尋ねる,別れる,足りる,進める,冷える,温める,濡れる,汚れる,割れる,折れる,破れる,消える,現れる,遂げる,妨げる,委ねる,蓄える,廃れる,衰える,栄える,極める,試みる,顧みる,戒める,慰める,憧れる,称える,紛れる,逸れる,隔てる,訪れる,設ける,備える,整える,鍛える,飽きる,懲りる,耐える,免れる,逃れる,尽きる,落ちる,過ぎる,似る,掲げる,滅びる,朽ちる", "v3": "来る", "i": "大きい,小さい,新しい,古い,高い,安い,低い,暑い,寒い,暖かい,涼しい,冷たい,長い,短い,重い,軽い,早い,遅い,近い,遠い,多い,少ない,難しい,易しい,面白い,楽しい,忙しい,痛い,甘い,辛い,広い,狭い,明るい,暗い,強い,弱い,若い,悪い,白い,黒い,赤い,青い,嬉しい,悲しい,寂しい,恥ずかしい,怖い,珍しい,詳しい,厳しい,優しい,正しい,細かい,柔らかい,硬い,深い,浅い,濃い,薄い,苦い,苦しい,眠い,懐かしい,激しい,貧しい,素晴らしい,著しい,甚だしい,夥しい,目覚ましい,乏しい,煩わしい,紛らわしい,疑わしい,望ましい,好ましい,相応しい,潔い,快い,尊い,儚い,脆い,渋い,鈍い,鋭い,険しい", "na": "好き,嫌い,上手,下手,元気,静か,有名,便利,親切,大切,大丈夫,簡単,暇,丈夫,必要,重要,複雑,単純,正確,自由,特別,普通,十分,無理,残念,真面目,熱心,丁寧,失礼,不便,不安,幸せ,楽,急,適当,確か,苦手,得意,曖昧,円滑,顕著,膨大,莫大,深刻,厳密,綿密,緻密,迅速,柔軟,頑固,謙虚,誠実,冷静,慎重,軽率,無謀,大胆,妥当,不可欠,画期的,抽象的", "adv": "一緒に,少し,時々,一番,本当に,多分,初めて,必ず,突然,最近,直接,特に,実は,例えば,絶対に,全然,結局,敢えて,殊に,専ら,極めて,一概に,徐々に,頻繁に,一向に,到底,依然として"}, "en": {"n": "family,mother,father,brother,sister,friend,teacher,student,doctor,child,baby,man,woman,boy,girl,people,neighbor,husband,wife,parent,head,face,eye,ear,nose,mouth,hand,foot,leg,arm,hair,tooth,heart,food,water,milk,bread,rice,egg,meat,fish,fruit,apple,vegetable,salt,sugar,coffee,tea,juice,breakfast,lunch,dinner,cake,house,home,room,kitchen,school,office,hospital,store,market,park,library,station,airport,city,town,country,street,road,bank,restaurant,hotel,beach,bridge,book,pen,paper,desk,chair,table,bed,door,window,phone,computer,clock,watch,key,bag,box,cup,bottle,picture,letter,money,ticket,umbrella,shoes,shirt,hat,car,bus,train,bike,plane,ship,sun,moon,star,sky,rain,snow,wind,weather,tree,flower,river,sea,mountain,dog,cat,bird,animal,color,morning,afternoon,evening,night,today,tomorrow,yesterday,week,month,year,hour,minute,time,day,spring,summer,fall,winter,name,job,question,answer,problem,idea,story,song,music,movie,game,sport,language,word,number,birthday,holiday,party,gift,trip,map,news,class,lesson,homework,schedule,experience,opportunity,environment,government,society,culture,tradition,history,science,technology,industry,economy,education,knowledge,information,communication,relationship,community,population,generation,customer,employee,manager,colleague,company,business,product,service,price,cost,budget,salary,income,tax,profit,contract,meeting,interview,appointment,reservation,application,document,report,project,plan,goal,purpose,reason,result,effect,cause,influence,solution,decision,choice,opinion,advice,suggestion,request,complaint,apology,promise,permission,agreement,argument,discussion,conversation,explanation,description,example,detail,difference,advantage,disadvantage,benefit,risk,danger,safety,accident,damage,injury,disease,medicine,treatment,patient,exercise,habit,diet,stress,emotion,feeling,mood,attitude,behavior,character,personality,ability,skill,talent,effort,success,failure,mistake,challenge,competition,victory,progress,development,growth,change,improvement,increase,decrease,amount,quality,quantity,average,distance,direction,location,area,region,border,traffic,transportation,journey,destination,luggage,passenger,tourist,vacation,festival,ceremony,event,audience,performance,exhibition,article,magazine,novel,author,memory,dream,future,period,century,deadline,rule,law,crime,police,court,duty,responsibility,freedom,peace,war,disaster,earthquake,climate,temperature,pollution,energy,resource,material,machine,equipment,tool,furniture,neighborhood,apartment,rent,hypothesis,phenomenon,perspective,criterion,consensus,controversy,dilemma,paradox,prejudice,stereotype,discrimination,inequality,poverty,welfare,legislation,regulation,policy,strategy,initiative,incentive,obstacle,constraint,deficit,surplus,inflation,recession,revenue,expenditure,subsidy,tariff,monopoly,merger,bankruptcy,liability,asset,infrastructure,sustainability,biodiversity,ecosystem,emission,drought,famine,epidemic,symptom,diagnosis,therapy,immunity,heritage,ideology,democracy,sovereignty,diplomacy,treaty,sanction,conflict,refugee,casualty,integrity,dignity,empathy,resentment,anxiety,nostalgia,ambition,perseverance,negotiation,compromise,collaboration,implication,assumption,evidence,analysis,interpretation,innovation", "v": "go,come,eat,drink,see,look,hear,listen,speak,talk,say,tell,read,write,buy,sell,give,take,make,do,have,get,want,need,like,love,know,think,understand,learn,study,teach,work,play,run,walk,sit,stand,sleep,wake,open,close,start,stop,finish,help,ask,wait,meet,call,send,bring,carry,put,use,find,lose,try,wash,clean,cook,cut,wear,pay,live,stay,leave,arrive,turn,move,swim,sing,dance,draw,laugh,cry,smile,remember,forget,improve,decide,recommend,suggest,explain,describe,discuss,agree,disagree,argue,complain,apologize,allow,refuse,accept,reject,invite,introduce,attend,join,participate,prepare,arrange,organize,manage,develop,produce,provide,deliver,order,cancel,confirm,reserve,apply,hire,retire,quit,earn,spend,save,borrow,lend,afford,invest,reduce,expand,grow,replace,repair,fix,break,destroy,build,create,design,invent,discover,explore,search,compare,choose,prefer,consider,imagine,believe,doubt,expect,hope,wish,worry,fear,surprise,disappoint,encourage,support,protect,prevent,avoid,solve,achieve,succeed,fail,win,compete,practice,recover,suffer,hurt,notice,recognize,realize,mention,announce,share,communicate,contact,reply,translate,graduate,belong,depend,include,contain,require,receive,return,continue,complete,delay,hurry,miss,follow,lead,sustain,emphasize,deteriorate,allocate,accumulate,acquire,advocate,alleviate,anticipate,articulate,assess,attribute,comply,conceal,concede,condemn,confront,consolidate,constitute,contemplate,contradict,convey,cultivate,deprive,derive,designate,deter,diminish,disclose,dismiss,disrupt,distinguish,distort,dominate,eliminate,embrace,enforce,enhance,ensure,erode,evaluate,exaggerate,exceed,exploit,facilitate,fluctuate,foster,fulfill,generate,hinder,illustrate,implement,imply,impose,incorporate,infer,inhibit,integrate,interfere,intervene,justify,manipulate,mitigate,monitor,neglect,negotiate,obtain,overcome,oversee,perceive,persuade,postpone,precede,prevail,prohibit,provoke,pursue,reconcile,reinforce,relinquish,replicate,resolve,restrain,retain,retrieve,scrutinize,speculate,stimulate,substitute,suppress,surpass,tolerate,transform,undermine,undertake,verify,violate,withdraw,withstand,yield,abolish,adhere,compensate,compile,conform,coincide,contaminate,depict,elaborate,encounter,endorse,eradicate,formulate,hamper,initiate,jeopardize,perpetuate,rectify,refute,reiterate,resemble,revoke,safeguard,streamline,supplement,terminate,trigger,unveil,uphold,utilize,validate,waive", "adj": "big,small,long,short,tall,new,old,young,good,bad,hot,cold,warm,cool,happy,sad,angry,tired,hungry,thirsty,busy,free,easy,difficult,fast,slow,early,late,cheap,expensive,dirty,heavy,light,strong,weak,rich,poor,beautiful,pretty,kind,nice,funny,quiet,loud,safe,dangerous,full,empty,right,wrong,same,different,important,famous,sick,healthy,delicious,sweet,dark,bright,available,necessary,possible,impossible,common,rare,popular,traditional,modern,ancient,foreign,local,public,private,personal,professional,serious,simple,similar,various,recent,previous,correct,convenient,comfortable,exciting,boring,nervous,confident,proud,polite,rude,honest,friendly,inevitable,comprehensive,ambiguous,reluctant,abundant,scarce,adequate,sufficient,substantial,significant,crucial,vital,essential,fundamental,profound,subtle,obvious,apparent,evident,explicit,implicit,abstract,concrete,arbitrary,consistent,coherent,contradictory,controversial,conventional,innovative,obsolete,contemporary,temporary,permanent,preliminary,subsequent,simultaneous,spontaneous,deliberate,voluntary,mandatory,optional,feasible,plausible,credible,reliable,vulnerable,fragile,resilient,rigid,flexible,diverse,distinct,identical,equivalent,relevant,appropriate,accurate,precise,vague,transparent,cautious,reckless,diligent,competent,proficient,eloquent,arrogant,humble,hostile,indifferent,compassionate,skeptical,optimistic,pessimistic,ambitious,persistent,stubborn,sincere,notorious,prominent,prestigious,lucrative", "adv": "always,usually,often,sometimes,never,again,together,alone,here,there,now,soon,very,really,maybe,already,still,also,only,almost,quickly,slowly,carefully,recently,immediately,suddenly,especially,probably,finally,gradually,instead,approximately,ultimately,predominantly,presumably,allegedly,consequently,nevertheless,furthermore,conversely,likewise,merely,solely,virtually,seemingly,thoroughly,drastically,accordingly,notably"}};
-var POSDICT={ja:{},en:{}};
+var POSDICT={ja:{},en:{},jp:{}};
 ['ja','en'].forEach(function(l){Object.keys(POSMAP[l]).forEach(function(c){POSMAP[l][c].split(',').forEach(function(x){POSDICT[l][x]=c;});});});
 var MAX_RETRY=2;
 function W(w,m,e,t,p,pos,syn,ant){return {word:w,meaning:m,example:e||'',trans:t||'',pron:p||'',pos:pos||'',syn:syn||'',ant:ant||''};}
@@ -284,17 +300,20 @@ if(!settings.sheets||!settings.sheets.ja||!settings.sheets.en){
   settings.sheets={ja:DEFAULT_SHEETS.ja.map(function(i){return SHEET_BASE+i;}),en:DEFAULT_SHEETS.en.map(function(i){return SHEET_BASE+i;})};
 }
 if(settings.sheets.en.length<4)settings.sheets.en[3]=IDIOM_SHEET;
+var PATTERN_SHEET=SHEET_BASE+'1UgWfjIAzo5JxDjwtV4J-9svTLTYpQkxd6Brf0x8zjx8';
+if(!settings.sheets.jp||!settings.sheets.jp.length)settings.sheets.jp=[PATTERN_SHEET];
 var SHEET_MOVED={"1qXBu21miZHrodZ8KWceHk-gAxIfZW3f6buABMWIbUlg": "13IJBgDOOUaMZRI7N8hpxJ5gNSNyo-QeyzfETDCyBRsQ", "1O_tJdRKx3vhOGCQwBdXteyYTl1PImatondaGF5AHERM": "1GGUs9Lhr2yt57NQ5gwtnWYEcV-rGll1xhPSYDKSt8_8", "1RZ2PfIBj1bBnf7jg65og3jyZshOnQi4P0CY4gk85Ew8": "1sThQFi0pGI_RT0p7jzAmlRpwUpekABdqCoF8YHm4dJk", "1ltp3GVGaclu_jtoakX_9SOZVGA_nCMMAN8RQhypozuo": "1GnM2ukGxmcIVAcw9qDHleORLdZCeHcPvkHMrrEJsdBk", "1EjfnFGD8vqrz-5epZVEiuJqyGl0LC-0pDqll669rSMA": "1W2ewtTUhUjYpmGGQhXFVsYmtuZNRf7BtTCj-Om9SKiA", "1egVy75b97A9mxnUN36sQ77I7Megp9m07bJf9m2x71uU": "19eJFLHtee1r2hEPM48YGEoSsPtXhDFnW6i_D8UdKwWU", "1l8JDF9EJ6LNJNtzdQtNLG_EfudOX_Cfq_7chCvQRgz8": "19IebN8mnkU_ubIjDIYPXBtRqeLYAeiIkxW2NELgFuXU"};
 ['ja','en'].forEach(function(l){settings.sheets[l]=settings.sheets[l].map(function(u){var m=/\/d\/([\w-]{20,})/.exec(u||'');return m&&SHEET_MOVED[m[1]]?SHEET_BASE+SHEET_MOVED[m[1]]:u;});});
 var progress=load('vq.progress',{});
 var marks=load('vq.marks',{});
 settings.pct=settings.pct||(settings.count===0?100:5);
 function quizSize(n){return n?Math.max(1,Math.round(n*settings.pct/100)):0;}
-function pctText(){var n=studyList().length;return settings.pct+'% · 약 '+quizSize(n)+'문제 ('+(S.lang==='ja'?'일본어':'영어')+' '+filterLabel()+' '+n+'개 기준)';}
+function pctText(){var n=studyList().length;return settings.pct+'% · 약 '+quizSize(n)+'문제 ('+LANG_NAME[S.lang]+' '+filterLabel()+' '+n+'개 기준)';}
 settings.repWord=settings.repWord||1;settings.repEx=settings.repEx||1;
 var stored=load('vq.data',null);
 var data=stored&&stored.ja&&stored.en?stored:{ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};
 if(!data.src)data.src={ja:'sample',en:'sample'};
+if(!data.jp||!data.jp.length)data.jp=[[]];
 var S={lang:'ja',level:0,mark:false,pg:{},opened:{},view:'list',query:'',open:null,status:null,q:null,confirmReset:false};
 
 /* ---------- 요미가나: 漢字(かんじ) → 한자 위 표기 ---------- */
@@ -305,7 +324,7 @@ function plain(s){return String(s).replace(RUBY,'$1');}
 function kana(s){return String(s).replace(RUBY,'$2');}
 function key(lang,w){return lang+'|'+plain(w.word);}
 function statusOf(lang,w){return progress[key(lang,w)]||'new';}
-function words(){return (data[S.lang]&&data[S.lang][S.level])||[];}
+function words(){return (data[S.lang]&&data[S.lang][lv()])||[];}
 
 /* ---------- 품사 ---------- */
 function parsePos(t,lang){
@@ -319,14 +338,14 @@ function parsePos(t,lang){
   if(t.indexOf('명사')>=0&&t.indexOf('대명사')<0)return 'n';
   return 'etc';
 }
-function posOf(lang,w){return w.pos||POSDICT[lang][plain(w.word)]||'etc';}
+function posOf(lang,w){return w.pos||(POSDICT[lang]||{})[plain(w.word)]||'etc';}
 function posGroup(p){return p.charAt(0)==='v'?'v':p==='idiom'?'etc':p;}
 function posBadge(lang,w){var p=posOf(lang,w);return p==='etc'?'':'<span class="pos">'+POS_LABEL[lang][p]+'</span>';}
 function markedList(){var seen={};return [].concat.apply([],data[S.lang]||[]).filter(function(w){var k=key(S.lang,w);if(!marks[k]||seen[k])return false;seen[k]=1;return true;});}
 function baseList(){return S.mark?markedList():words();}
 function anyPos(){return Object.keys(S.pg).length>0;}
 function studyList(){var l=baseList();if(!anyPos())return l;return l.filter(function(w){return S.pg[posGroup(posOf(S.lang,w))];});}
-function filterLabel(){var a=POS_FILTER[S.lang].filter(function(f){return S.pg[f[0]];}).map(function(f){return f[1];});return (S.mark?'형광펜':LEVELS[S.level])+(a.length?' '+a.join('+'):'');}
+function filterLabel(){var a=POS_FILTER[S.lang].filter(function(f){return S.pg[f[0]];}).map(function(f){return f[1];});return (S.mark?'형광펜':S.lang==='jp'?'패턴':LEVELS[S.level])+(a.length?' '+a.join('+'):'');}
 
 /* ---------- 일본어 활용 ---------- */
 var G1={'う':'わいえお','く':'かきけこ','ぐ':'がぎげご','す':'さしせそ','つ':'たちてと','ぬ':'なにねの','ぶ':'ばびべぼ','む':'まみめも','る':'らりれろ'};
@@ -350,7 +369,7 @@ function relHtml(lang,w){
   function list(t){return String(t||'').split(/[,、，]/).map(function(x){return x.trim();}).filter(Boolean);}
   var dict={};[].concat.apply([],data[lang]||[]).forEach(function(x){dict[plain(x.word).toLowerCase()]=x.meaning;});
   function item(x){var m=dict[plain(x).toLowerCase()];
-    return '<button type="button" class="rel" data-speak="'+esc(x)+'" data-kind="word"><span class="'+(lang==='ja'?'ja':'')+'">'+ruby(x,lang==='ja')+'</span>'+(m?' <small>'+esc(m)+'</small>':'')+'</button>';}
+    return '<button type="button" class="rel" data-speak="'+esc(x)+'" data-kind="word"><span class="'+(isJa(lang)?'ja':'')+'">'+ruby(x,isJa(lang))+'</span>'+(m?' <small>'+esc(m)+'</small>':'')+'</button>';}
   var s=list(w.syn),a=list(w.ant);if(!s.length&&!a.length)return '';
   return '<div class="conj rels">'+(s.length?'<div><b>유의어</b><span class="rel-row">'+s.map(item).join('')+'</span></div>':'')+(a.length?'<div><b>반의어</b><span class="rel-row">'+a.map(item).join('')+'</span></div>':'')+'</div>';
 }
@@ -400,9 +419,10 @@ function viewGrammar(){
 
 /* ---------- 발음 듣기 ---------- */
 var canSpeak=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
+function sayText(text,lang){var t=plain(text);if(isJa(lang))t=t.replace(/[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF+~〜]/g,' ').replace(/\s+/g,' ').trim();return t;}
 function speak(text,lang,times){
   try{window.speechSynthesis.cancel();
-    for(var i=0;i<(times||1);i++){var u=new SpeechSynthesisUtterance(plain(text));u.lang=lang==='ja'?'ja-JP':'en-US';u.rate=.9;window.speechSynthesis.speak(u);}
+    for(var i=0;i<(times||1);i++){var u=new SpeechSynthesisUtterance(sayText(text,lang));u.lang=isJa(lang)?'ja-JP':'en-US';u.rate=.9;window.speechSynthesis.speak(u);}
   }catch(e){}
 }
 function speakBtn(text,label){
@@ -412,19 +432,32 @@ function speakBtn(text,label){
 /* ---------- 화면 ---------- */
 var app=document.getElementById('app');
 function wordHtml(w,lang,show){
-  var h='<span class="word '+(lang==='ja'?'ja':'')+'">'+ruby(w.word,lang==='ja'&&show)+'</span>';
+  var h='<span class="word '+(isJa(lang)?'ja':'')+'">'+ruby(w.word,isJa(lang)&&show)+'</span>';
   return h;
 }
 function exampleHtml(w,lang,show,withTrans){
   if(!w.example)return '';
-  return '<div class="ex"><div class="ex-s '+(lang==='ja'?'ja':'')+'">'+ruby(w.example,lang==='ja'&&show)+'</div>'+
+  return '<div class="ex"><div class="ex-s '+(isJa(lang)?'ja':'')+'">'+ruby(w.example,isJa(lang)&&show)+'</div>'+
     (withTrans&&w.trans?'<div class="ex-t">'+esc(w.trans)+'</div>':'')+'</div>';
 }
+function wordList(t){return String(t||'').split(/\s*\/\s*/).map(function(x){x=x.trim();if(!x)return null;var m=/^(\S+)\s+(.+)$/.exec(x);return m?[m[1],m[2]]:[x,''];}).filter(Boolean);}
+function patSent(n,s,t){if(!s)return '';
+  return '<div class="ex"><div class="ex-s ja"><span class="ex-n">예문 '+n+'</span>'+ruby(s,true)+'</div>'+(t?'<div class="ex-t">'+esc(t)+'</div>':'')+
+    '<div class="row" style="flex:none">'+speakBtn(s,'예문'+n+' 듣기')+'</div></div>';}
+function patternBody(w){
+  var ws=wordList(w.words);
+  return patSent(1,w.example,w.trans)+patSent(2,w.ex2,w.tr2)+
+    (w.point?'<div class="conj"><b>패턴 포인트</b><p class="pt-p">'+ruby(w.point,true)+'</p></div>':'')+
+    ((ws.length||w.head)?'<div class="conj rels">'+(ws.length?'<div><b>단어 <small>누르면 발음</small></b><span class="rel-row">'+ws.map(function(x){
+      return '<button type="button" class="rel" data-speak="'+esc(x[0])+'" data-kind="word"><span class="ja">'+ruby(x[0],true)+'</span>'+(x[1]?' <small>'+esc(x[1])+'</small>':'')+'</button>';}).join('')+'</span></div>':'')+
+      (w.head?'<div><b>표제어</b><span class="rel-row"><button type="button" class="rel" data-speak="'+esc(w.head)+'" data-kind="word"><span class="ja">'+ruby(w.head,true)+'</span>'+(w.headPron?' <small>'+esc(w.headPron)+'</small>':'')+'</button></span></div>':'')+'</div>':'')+
+    '<div class="row" style="flex:none">'+speakBtn(w.word,'패턴 듣기')+'</div>';}
+function matchQ(w,q){return !q||(plain(w.word)+' '+kana(w.word)+' '+w.meaning+' '+w.pron+' '+plain(w.head||'')+' '+plain(w.example||'')).toLowerCase().indexOf(q)>=0;}
 function renderTabs(){
   [].forEach.call(document.querySelectorAll('#tab-lang button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.lang===S.lang));});
   [].forEach.call(document.querySelectorAll('#tab-level button'),function(b){b.setAttribute('aria-pressed',String(+b.dataset.level===S.level));});
   var quiz=S.view==='quiz';
-  document.getElementById('tab-lang').hidden=quiz;document.getElementById('tab-level').hidden=quiz;
+  document.getElementById('tab-lang').hidden=quiz;document.getElementById('tab-level').hidden=quiz||S.lang==='jp';
   document.getElementById('btn-settings').textContent=S.view==='settings'?'단어 목록으로':'시트 연결·설정';
   document.getElementById('btn-grammar').textContent=S.view==='grammar'?'단어 목록으로':'일본어 문법 표';
   document.getElementById('lv-idiom').hidden=S.lang!=='en';
@@ -443,32 +476,30 @@ function viewList(){
   var list=studyList(),c={ok:0,retry:0,'new':0};
   list.forEach(function(w){c[statusOf(S.lang,w)]++;});
   var q=S.query.trim().toLowerCase();
-  var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){
-    if(!q)return true;var w=o.w;
-    return (plain(w.word)+' '+kana(w.word)+' '+w.meaning+' '+w.pron).toLowerCase().indexOf(q)>=0;
-  });
+  var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){return matchQ(o.w,q);});
+  var U=S.lang==='jp'?'패턴':'단어';
   var h='<section class="panel summary"><div class="legend">'+
-    '<span><i class="dot ok"></i>외운 단어 <b>'+c.ok+'</b></span>'+
-    '<span><i class="dot retry"></i>복습할 단어 <b>'+c.retry+'</b></span>'+
-    '<span><i class="dot new"></i>안 본 단어 <b>'+c['new']+'</b></span>'+
+    '<span><i class="dot ok"></i>외운 '+U+' <b>'+c.ok+'</b></span>'+
+    '<span><i class="dot retry"></i>복습할 '+U+' <b>'+c.retry+'</b></span>'+
+    '<span><i class="dot new"></i>안 본 '+U+' <b>'+c['new']+'</b></span>'+
     (data.src[S.lang]==='sample'?'<span class="sample-tag">샘플 단어</span>':'')+
     '</div><button type="button" class="cta" data-act="start"'+(list.length?'':' disabled')+'>퀴즈 시작</button></section>';
   var cnt={};baseList().forEach(function(w){var g=posGroup(posOf(S.lang,w));cnt[g]=(cnt[g]||0)+1;});
   var chips=POS_FILTER[S.lang].filter(function(f){return f[0]==='all'||cnt[f[0]]||S.pg[f[0]];});
   cnt.mark=markedList().length;if(cnt.mark)chips.push(['mark','형광펜']);
   var on=function(k){return k==='all'?(!S.mark&&!anyPos()):k==='mark'?S.mark:!!S.pg[k];};
-  if(chips.length>1)h+='<div class="chips" role="group" aria-label="품사 선택 (여러 개 선택 가능)">'+chips.map(function(f){return '<button type="button" class="chip" data-pos="'+f[0]+'" aria-pressed="'+on(f[0])+'">'+f[1]+(f[0]==='all'?'':' <b>'+(cnt[f[0]]||0)+'</b>')+'</button>';}).join('')+'</div>';
+  if(chips.length>1)h+='<div class="chips" role="group" aria-label="'+(S.lang==='jp'?'테마':'품사')+' 선택 (여러 개 선택 가능)">'+chips.map(function(f){return '<button type="button" class="chip" data-pos="'+f[0]+'" aria-pressed="'+on(f[0])+'">'+f[1]+(f[0]==='all'?'':' <b>'+(cnt[f[0]]||0)+'</b>')+'</button>';}).join('')+'</div>';
   var allOpen=list.length>0&&list.every(function(w){return S.opened[key(S.lang,w)];});
   if(S.mark)h+='<div class="row"><button type="button" class="cta" data-act="auto">'+(auto.on?'■ 자동 읽기 멈추기 ('+(auto.i+1)+' / '+list.length+')':'▶ '+filterLabel()+' 자동 읽기 ('+list.length+'개)')+'</button>'+
     '<button type="button" class="ghost" data-act="openall">'+(allOpen?'모두 접기':'모두 펼치기 ('+list.length+'개)')+'</button></div>'+
-    '<p class="note" style="margin:0">모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 품사 버튼을 함께 누르면 그 품사만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다.</p>';
+    '<p class="note" style="margin:0">'+(S.lang==='jp'?'형광펜으로 칠한 패턴을 모았습니다. 테마 버튼을 함께 누르면 그 테마만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 패턴을 하나씩 펼쳐 패턴과 예문 두 개를 읽고 닫은 뒤 다음으로 넘어갑니다.</p>':'모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 품사 버튼을 함께 누르면 그 품사만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다.</p>');
   h+='<section class="panel"><label class="search" for="q-search"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
-    '<input id="q-search" type="search" placeholder="단어·뜻 검색" value="'+esc(S.query)+'" autocomplete="off"></label></section>';
+    '<input id="q-search" type="search" placeholder="'+(S.lang==='jp'?'패턴·뜻·예문 검색':'단어·뜻 검색')+'" value="'+esc(S.query)+'" autocomplete="off"></label></section>';
   h+='<section class="grid" id="grid">'+gridHtml(shown,list.length)+'</section>';
   return h;
 }
 function gridHtml(shown,total){
-  if(!total)return '<p class="empty">이 난이도에는 아직 단어가 없습니다. 위의 시트 연결·설정에서 단어장을 불러오세요.</p>';
+  if(!total)return '<p class="empty">'+(S.lang==='jp'?'아직 패턴이 없습니다. 위의 시트 연결·설정에서 시트를 불러오세요.':'이 난이도에는 아직 단어가 없습니다. 위의 시트 연결·설정에서 단어장을 불러오세요.')+'</p>';
   if(!shown.length)return '<p class="empty">검색 결과가 없습니다.</p>';
   return shown.map(function(o){
     var w=o.w,st=statusOf(S.lang,w),k=key(S.lang,w),open=!!S.opened[k];
@@ -478,7 +509,8 @@ function gridHtml(shown,total){
       '<span class="sub" style="display:block">'+posBadge(S.lang,w)+esc(w.meaning)+'</span></button>'+
       '<button type="button" class="card-more" data-open="'+esc(k)+'" aria-expanded="'+open+'" aria-label="예문과 활용 보기">'+
       '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>';
-    if(open){
+    if(open&&S.lang==='jp'){h+='<div class="card-body">'+patternBody(w)+'</div>';}
+    else if(open){
       h+='<div class="card-body">'+(S.lang==='ja'&&!settings.showReading?'<div class="pron">읽기: '+esc(kana(w.word))+'</div>':'')+
         (S.lang==='en'&&w.pron&&!settings.showReading?'<div class="pron">발음: '+esc(w.pron)+'</div>':'')+
         (exampleHtml(w,S.lang,true,true)||'<div class="ex-t">예문이 없습니다.</div>')+relHtml(S.lang,w)+(S.lang==='ja'?conjHtml(w,posOf('ja',w)):'')+
@@ -505,7 +537,7 @@ function nextQuestion(){
 }
 function hintPlan(w,lang){
   var p=[];
-  if(!settings.showReading&&(lang==='ja'?kana(w.word)!==w.word:w.pron))p.push('reading');
+  if(!settings.showReading&&(isJa(lang)?kana(w.word)!==w.word:w.pron))p.push('reading');
   if(w.example)p.push('example');
   p.push('cut');
   return p;
@@ -516,7 +548,7 @@ function viewQuiz(){
   var showR=settings.showReading||q.done||hints.indexOf('reading')>=0;
   var h='<div class="q-top"><span class="q-count">'+(q.i+1)+' / '+n+'</span><div class="bar"><i style="width:'+Math.round((q.i+(q.done?1:0))/n*100)+'%"></i></div>'+
     '<button type="button" class="q-quit" data-act="quit">그만하기</button></div>';
-  h+='<section class="panel q-word"><div class="q-ask">이 단어의 뜻은?</div>'+wordHtml(w,lang,showR)+
+  h+='<section class="panel q-word"><div class="q-ask">'+(lang==='jp'?'이 패턴의 뜻은?':'이 단어의 뜻은?')+'</div>'+wordHtml(w,lang,showR)+
     (lang==='en'&&w.pron&&showR?'<div class="pron">['+esc(w.pron)+']</div>':'')+'<div>'+posBadge(lang,w)+'</div>'+
     '<div class="chances" aria-label="다시 맞춰보기 남은 기회 '+Math.max(0,MAX_RETRY-q.tries)+'번">다시 맞춰보기 기회';
   for(var i=0;i<MAX_RETRY;i++)h+='<i class="'+(i<q.tries?'used':'')+'"></i>';
@@ -529,14 +561,14 @@ function viewQuiz(){
     h+='<div class="msg bad">틀렸어요. 다시 맞춰보세요. (남은 기회 '+(MAX_RETRY-q.tries+1)+'번)</div>';
   }
   h+='</div>';
-  if(!q.done&&hints.indexOf('example')>=0)h+='<div class="hint"><b>힌트: 예문</b><span class="ex-s '+(lang==='ja'?'ja':'')+'" style="display:block">'+ruby(w.example,lang==='ja'&&showR)+'</span></div>';
+  if(!q.done&&hints.indexOf('example')>=0)h+='<div class="hint"><b>힌트: 예문</b><span class="ex-s '+(isJa(lang)?'ja':'')+'" style="display:block">'+ruby(w.example,isJa(lang)&&showR)+'</span></div>';
   h+='<div class="choices">'+q.choices.map(function(c,i){
     var wrong=q.wrong[i]||q.cut===i,right=q.done&&c===w.meaning;
     return '<button type="button" class="choice'+(wrong?' wrong':'')+(right?' right':'')+(q.shake===i?' shake':'')+'" data-choice="'+i+'"'+(wrong||q.done?' disabled':'')+'>'+esc(c)+'</button>';
   }).join('')+'</div>';
   if(q.done){
-    h+='<section class="panel" style="display:flex;flex-direction:column;gap:10px">'+(exampleHtml(w,lang,true,true)||'')+
-      '<div class="row">'+speakBtn(w.word,'단어 듣기')+(w.example?speakBtn(w.example,'예문 듣기'):'')+'</div>'+
+    h+='<section class="panel" style="display:flex;flex-direction:column;gap:10px">'+(lang==='jp'?patSent(1,w.example,w.trans)+patSent(2,w.ex2,w.tr2)+'<div class="row">'+speakBtn(w.word,'패턴 듣기')+'</div>':
+      (exampleHtml(w,lang,true,true)||'')+'<div class="row">'+speakBtn(w.word,'단어 듣기')+(w.example?speakBtn(w.example,'예문 듣기'):'')+'</div>')+
       '<button type="button" class="cta block" data-act="next">'+(q.i+1<n?'다음 문제':'결과 보기')+'</button></section>';
   }
   q.shake=null;
@@ -570,10 +602,10 @@ function viewResult(){
     '<div class="s-half"><b>'+c.retry+'</b><span>다시 도전해 정답</span></div>'+
     '<div class="s-bad"><b>'+c.fail+'</b><span>오답</span></div></div></section>';
   if(rev.length){
-    h+='<section class="panel"><h2>복습할 단어 '+rev.length+'개</h2><ul class="review">'+rev.map(function(r){
+    h+='<section class="panel"><h2>복습할 '+(q.lang==='jp'?'패턴':'단어')+' '+rev.length+'개</h2><ul class="review">'+rev.map(function(r){
       return '<li>'+wordHtml(r.w,q.lang,true)+' <span class="sub">'+esc(r.w.meaning)+'</span></li>';}).join('')+'</ul></section>';
   }else if(q.results.length){h+='<div class="msg good">모두 한 번에 맞혔습니다.</div>';}
-  h+='<div class="row">'+(rev.length?'<button type="button" class="cta" data-act="again">틀린 단어만 다시 풀기</button>':'')+
+  h+='<div class="row">'+(rev.length?'<button type="button" class="cta" data-act="again">틀린 것만 다시 풀기</button>':'')+
     '<button type="button" class="ghost" data-act="list">단어 목록으로</button></div>';
   return h;
 }
@@ -581,26 +613,29 @@ function viewResult(){
 /* ---------- 설정·시트 ---------- */
 function viewSettings(){
   var st=S.status?'<div class="status '+(S.status.ok?'fine':'err')+'" role="status">'+esc(S.status.text)+'</div>':'';
-  var rows=['ja','en'].map(function(l){return levelsOf(l).map(function(name,i){
+  var rows=LANGS.map(function(l){return levelsOf(l).map(function(name,i){
       var u=settings.sheets[l][i]||'',n=(data[l]&&data[l][i])?data[l][i].length:0,from=data.src[l]==='sheet';
-      return '<li><span class="sh-name">'+(l==='ja'?'일본어':'영어')+' '+name+'</span><span class="sh-n">'+(from?n+'개':'—')+'</span>'+
+      return '<li><span class="sh-name">'+sheetLabel(l,i)+'</span><span class="sh-n">'+(from?n+'개':'—')+'</span>'+
         (u?'<a class="sh-open" href="'+esc(u)+'" target="_blank" rel="noopener">시트 열기 ↗</a>':'<span class="sh-open off">주소 없음</span>')+'</li>';}).join('');}).join('');
   return '<section class="panel"><h2>구글 시트에서 불러오기</h2>'+
-    '<p class="note">단어장은 구글 시트 7개(일본어 3개, 영어 4개)에서 불러옵니다. 시트에서 단어를 고치거나 추가한 뒤 아래 버튼을 누르면 앱에 반영됩니다.</p>'+
+    '<p class="note">단어장은 구글 시트 8개(일본어 3개, 일본어 패턴 1개, 영어 4개)에서 불러옵니다. 시트에서 내용을 고치거나 추가한 뒤 아래 버튼을 누르면 앱에 반영됩니다.</p>'+
     '<ul class="sheets">'+rows+'</ul>'+
-    '<button type="button" class="cta block" data-act="fetch">시트에서 단어 불러오기</button>'+st+
+    '<button type="button" class="cta block" data-act="fetch">시트에서 불러오기</button>'+st+
     '<details class="more"><summary>시트 양식 보기</summary>'+
     '<p class="note">첫 줄은 아래 제목 줄이어야 합니다. 순서는 바뀌어도 되고, 품사·유의어·반의어는 비워 둬도 됩니다. 유의어·반의어가 여러 개면 쉼표로 나눠 적습니다.</p>'+
     '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="7">일본어 시트</th></tr><tr><td>단어</td><td>뜻</td><td>예문</td><td>예문 해석</td><td>품사</td><td>유의어</td><td>반의어</td></tr><tr><td>勉強(べんきょう)</td><td>공부</td><td>毎日(まいにち)勉強(べんきょう)します。</td><td>매일 공부합니다.</td><td>명사</td><td>学習(がくしゅう)</td><td></td></tr></table></div>'+
     '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="8">영어 시트</th></tr><tr><td>단어</td><td>발음</td><td>뜻</td><td>예문</td><td>예문 해석</td><td>품사</td><td>유의어</td><td>반의어</td></tr><tr><td>cheap</td><td>칩</td><td>값싼</td><td>This bag is cheap.</td><td>이 가방은 싸다.</td><td>형용사</td><td>inexpensive</td><td>expensive</td></tr></table></div>'+
+    '<div class="fmt-wrap"><table class="fmt"><tr><th colspan="11">일본어 패턴 시트 <small>(새로 추가)</small></th></tr><tr><td>테마</td><td>패턴</td><td>패턴 뜻</td><td>문장1</td><td>문장1 해석</td><td>문장2</td><td>문장2 해석</td><td>패턴 포인트</td><td>단어</td><td>표제어</td><td>표제어 발음</td></tr>'+
+    '<tr><td>건강 및 의료</td><td>~はずです</td><td>~일 것이다</td><td>薬(くすり)を飲(の)んだはずです。</td><td>약을 먹었을 거예요.</td><td>彼(かれ)はもう着(つ)いたはずです。</td><td>그는 벌써 도착했을 거예요.</td><td>「~はずです」는 …</td><td>薬(くすり) 약 / 飲(の)む 마시다</td><td>病院(びょういん)</td><td>뵤- 인</td></tr></table></div>'+
+    '<p class="note">패턴 시트: <b>테마</b>는 기초인사 및 자기소개 · 식당 · 쇼핑하기 · 여행 및 관광 · 일상생활 · 학교 및 교육 · 직장 및 업무 · 가족 및 관계 · 건강 및 의료 · 문화 및 행사 중 하나로 적으면 위쪽 테마 버튼으로 나뉩니다. <b>패턴</b>이 카드 앞면에, <b>패턴 뜻</b>이 그 아래에 나오고, 펼치면 문장 2개·패턴 포인트·단어가 보입니다. <b>단어</b> 칸은 “단어 뜻”을 / 로 나눠 적습니다. 칸 맨 앞에 작은따옴표(\')를 쓰면 구글 시트가 지워 버리니 「」나 ‘’를 쓰세요.</p>'+
     '<p class="note">품사 칸에 적는 말: 명사 · 동사1 · 동사2 · 동사3 · い형용사 · な형용사 · 부사 (영어는 명사 · 동사 · 형용사 · 부사 · 숙어). 일본어 단어와 예문의 요미가나는 한자 바로 뒤 괄호에 적습니다.</p></details>'+
     '<details class="more"><summary>시트 주소 바꾸기</summary>'+
     '<p class="note">다른 시트를 쓰고 싶을 때만 바꾸세요. 시트는 “링크가 있는 모든 사용자 · 뷰어”로 공유되어 있어야 합니다.</p>'+
-    ['ja','en'].map(function(l){return levelsOf(l).map(function(name,i){
-      return '<div class="field"><label for="in-s-'+l+'-'+i+'">'+(l==='ja'?'일본어':'영어')+' '+name+'</label><input id="in-s-'+l+'-'+i+'" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/..." value="'+esc(settings.sheets[l][i]||'')+'"></div>';}).join('');}).join('')+
+    LANGS.map(function(l){return levelsOf(l).map(function(name,i){
+      return '<div class="field"><label for="in-s-'+l+'-'+i+'">'+sheetLabel(l,i)+'</label><input id="in-s-'+l+'-'+i+'" type="url" inputmode="url" placeholder="https://docs.google.com/spreadsheets/d/..." value="'+esc(settings.sheets[l][i]||'')+'"></div>';}).join('');}).join('')+
     '</details></section>'+
     '<section class="panel"><h2>붙여넣기로 가져오기</h2>'+
-    '<p class="note">시트 주소로 불러올 수 없을 때 씁니다. 구글 시트에서 제목 줄을 포함해 칸을 복사한 뒤 아래에 붙여넣으세요. 지금 선택된 <b>'+(S.lang==='ja'?'일본어':'영어')+' · '+LEVELS[S.level]+'</b> 단어장으로 들어갑니다.</p>'+
+    '<p class="note">시트 주소로 불러올 수 없을 때 씁니다. 구글 시트에서 제목 줄을 포함해 칸을 복사한 뒤 아래에 붙여넣으세요. 지금 선택된 <b>'+sheetLabel(S.lang,lv())+'</b> 시트 자리로 들어갑니다.</p>'+
     '<div class="field"><label for="in-paste">복사한 칸 붙여넣기</label><textarea id="in-paste" spellcheck="false"></textarea></div>'+
     '<button type="button" class="ghost" data-act="paste">이 단어장에 넣기</button></section>'+
     '<section class="panel"><h2>학습 설정</h2>'+
@@ -623,9 +658,32 @@ function parseCSV(text){
   if(cell!==''||row.length){row.push(cell);rows.push(row);}
   return rows;
 }
+function patItems(rows){
+  var idx={theme:0,word:1,meaning:2,example:3,trans:4,ex2:5,tr2:6,point:7,words:8,head:9,headPron:10};
+  var head=rows[0].map(function(c){return String(c).replace(/\s/g,'');});
+  if(head.some(function(c){return c.indexOf('패턴')>=0;})){
+    idx={theme:-1,word:-1,meaning:-1,example:-1,trans:-1,ex2:-1,tr2:-1,point:-1,words:-1,head:-1,headPron:-1};
+    head.forEach(function(c,i){
+      if(c.indexOf('테마')>=0)idx.theme=i;
+      else if(c.indexOf('포인트')>=0)idx.point=i;
+      else if(c.indexOf('표제어')>=0)idx[c.indexOf('발음')>=0?'headPron':'head']=i;
+      else if(/해석|번역/.test(c))idx[c.indexOf('2')>=0?'tr2':'trans']=i;
+      else if(/문장|예문/.test(c))idx[c.indexOf('2')>=0?'ex2':'example']=i;
+      else if(/뜻|의미/.test(c))idx.meaning=i;
+      else if(c.indexOf('패턴')>=0)idx.word=i;
+      else if(c.indexOf('단어')>=0)idx.words=i;
+    });
+    rows=rows.slice(1);
+  }
+  function g(r,i){return i>=0&&r[i]!=null?String(r[i]).trim():'';}
+  return rows.map(function(r){var w=W(g(r,idx.word),g(r,idx.meaning),g(r,idx.example),g(r,idx.trans),'',parseTheme(g(r,idx.theme)));
+    w.ex2=g(r,idx.ex2);w.tr2=g(r,idx.tr2);w.point=g(r,idx.point);w.words=g(r,idx.words);w.head=g(r,idx.head);w.headPron=g(r,idx.headPron);return w;})
+    .filter(function(w){return w.word&&w.meaning;});
+}
 function rowsToItems(rows,lang){
   rows=rows.filter(function(r){return r.some(function(c){return String(c).trim();});});
   if(!rows.length)return [];
+  if(lang==='jp')return patItems(rows);
   var idx=lang==='ja'?{word:0,meaning:1,example:2,trans:3,pron:-1,pos:-1,syn:-1,ant:-1}:{word:0,pron:1,meaning:2,example:3,trans:4,pos:-1,syn:-1,ant:-1};
   var head=rows[0].map(function(c){return String(c).replace(/\s/g,'');});
   if(head.some(function(c){return c.indexOf('단어')>=0;})){
@@ -656,12 +714,12 @@ function fetchSheet(lang,url){
 }
 function doFetch(){
   var jobs=[];
-  ['ja','en'].forEach(function(l){settings.sheets[l].forEach(function(u,i){if(u&&u.trim())jobs.push([l,i,u]);});});
+  LANGS.forEach(function(l){(settings.sheets[l]||[]).forEach(function(u,i){if(u&&u.trim())jobs.push([l,i,u]);});});
   if(!jobs.length){S.status={ok:false,text:'시트 주소를 하나 이상 입력하세요.'};return render();}
   S.status={ok:true,text:'불러오는 중입니다…'};render();
-  var lines=[],ok=true,next={ja:data.ja.slice(),en:data.en.slice()},got={ja:false,en:false};
+  var lines=[],ok=true,next={ja:data.ja.slice(),en:data.en.slice(),jp:data.jp.slice()},got={ja:false,en:false,jp:false};
   Promise.all(jobs.map(function(j){
-    var label=(j[0]==='ja'?'일본어 ':'영어 ')+LEVELS[j[1]];
+    var label=sheetLabel(j[0],j[1]);
     return fetchSheet(j[0],j[2]).then(function(items){
       if(!got[j[0]]&&data.src[j[0]]==='sample'){next[j[0]]=levelsOf(j[0]).map(function(){return [];});}
       if(j[0]==='en'&&j[1]===3)items.forEach(function(w){if(!w.pos)w.pos='idiom';});
@@ -669,8 +727,8 @@ function doFetch(){
     },function(e){ok=false;
       lines.push(label+': 불러오지 못했습니다. '+(e&&e.message&&!/fetch|network|load/i.test(e.message)?e.message:'시트 공유가 “링크가 있는 모든 사용자”인지 확인하세요. Claude 안에서 열었다면 외부 연결이 막혀 있습니다.'));});
   })).then(function(){
-    ['ja','en'].forEach(function(l){if(got[l]){data[l]=next[l];data.src[l]='sheet';}});
-    if(ok)data.v=2;
+    LANGS.forEach(function(l){if(got[l]){data[l]=next[l];data.src[l]='sheet';}});
+    if(ok)data.v=3;
     save('vq.data',data);lines.sort();S.status={ok:ok,text:lines.join('\n')};render();});
 }
 function doPaste(){
@@ -679,8 +737,8 @@ function doPaste(){
   var items=rowsToItems(rows,S.lang);
   if(!items.length){S.status={ok:false,text:'단어를 찾지 못했습니다. 단어와 뜻 칸이 포함되도록 복사했는지 확인하세요.'};return render();}
   if(data.src[S.lang]==='sample'){data[S.lang]=levelsOf(S.lang).map(function(){return [];});data.src[S.lang]='paste';}
-  data[S.lang]=data[S.lang].slice();data[S.lang][S.level]=items;save('vq.data',data);
-  S.status={ok:true,text:(S.lang==='ja'?'일본어':'영어')+' '+LEVELS[S.level]+'에 '+items.length+'개를 넣었습니다.'};render();
+  data[S.lang]=data[S.lang].slice();data[S.lang][lv()]=items;save('vq.data',data);
+  S.status={ok:true,text:sheetLabel(S.lang,lv())+'에 '+items.length+'개를 넣었습니다.'};render();
 }
 
 /* ---------- 형광펜 자동 읽기 ---------- */
@@ -695,7 +753,7 @@ function speakSeq(parts,lang,done){
     if(tk!==auto.token)return;
     if(!q.length)return done();
     var fired=false,go=function(){if(fired)return;fired=true;next();};
-    try{var u=new SpeechSynthesisUtterance(plain(q.shift()));u.lang=lang==='ja'?'ja-JP':'en-US';u.rate=.9;u.onend=go;u.onerror=go;window.speechSynthesis.speak(u);}catch(e){go();}
+    try{var u=new SpeechSynthesisUtterance(sayText(q.shift(),lang));u.lang=isJa(lang)?'ja-JP':'en-US';u.rate=.9;u.onend=go;u.onerror=go;window.speechSynthesis.speak(u);}catch(e){go();}
   })();
 }
 function autoStep(){
@@ -706,7 +764,7 @@ function autoStep(){
   S.opened={};S.opened[key(S.lang,w)]=1;render();
   var el=app.querySelector('.card.open');
   if(el&&el.scrollIntoView)try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
-  var parts=[[w.word,settings.repWord]];if(w.example)parts.push([w.example,settings.repEx]);
+  var parts=[[w.word,settings.repWord]];if(w.example)parts.push([w.example,settings.repEx]);if(w.ex2)parts.push([w.ex2,settings.repEx]);
   speakSeq(parts,S.lang,function(){
     auto.timer=setTimeout(function(){
       if(tk!==auto.token)return;
@@ -718,7 +776,7 @@ function autoStep(){
 function autoStart(){try{window.speechSynthesis.cancel();}catch(e){}auto.on=true;auto.i=0;auto.token++;autoStep();}
 
 /* ---------- 이벤트 ---------- */
-document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.lang=b.dataset.lang;if(S.lang!=='en'&&S.level>2)S.level=0;S.mark=false;S.pg={};S.opened={};S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.lang=b.dataset.lang;if(S.lang==='ja'&&S.level>2)S.level=0;S.mark=false;S.pg={};S.opened={};S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
 document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.level=+b.dataset.level;S.mark=false;S.pg={};S.opened={};S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
 document.getElementById('btn-grammar').addEventListener('click',function(){if(S.view==='quiz')return;autoHalt();S.view=S.view==='grammar'?'list':'grammar';render();window.scrollTo(0,0);});
 document.getElementById('btn-settings').addEventListener('click',function(){autoHalt();S.view=S.view==='settings'?'list':'settings';S.status=null;S.confirmReset=false;render();});
@@ -745,13 +803,13 @@ app.addEventListener('click',function(e){
   else if(a==='list'){S.view='list';render();}
   else if(a==='fetch')doFetch();
   else if(a==='paste')doPaste();
-  else if(a==='sample'){data={ja:SAMPLE.ja,en:SAMPLE.en,src:{ja:'sample',en:'sample'}};save('vq.data',data);S.status={ok:true,text:'샘플 단어로 되돌렸습니다.'};render();}
+  else if(a==='sample'){data={ja:SAMPLE.ja,en:SAMPLE.en,jp:data.jp,v:data.v,src:{ja:'sample',en:'sample',jp:data.src.jp}};save('vq.data',data);S.status={ok:true,text:'샘플 단어로 되돌렸습니다.'};render();}
   else if(a==='reset'){if(S.confirmReset){progress={};save('vq.progress',progress);S.confirmReset=false;S.status={ok:true,text:'학습 기록을 지웠습니다.'};}else S.confirmReset=true;render();}
 });
 app.addEventListener('input',function(e){
   var id=e.target.id;
   if(id==='q-search'){S.query=e.target.value;var list=studyList(),q=S.query.trim().toLowerCase();
-    var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){var w=o.w;return !q||(plain(w.word)+' '+kana(w.word)+' '+w.meaning+' '+w.pron).toLowerCase().indexOf(q)>=0;});
+    var shown=list.map(function(w,i){return {w:w,i:i};}).filter(function(o){return matchQ(o.w,q);});
     document.getElementById('grid').innerHTML=gridHtml(shown,list.length);}
   else if(id==='in-pct'){settings.pct=+e.target.value;save('vq.settings',settings);document.getElementById('pct-out').textContent=pctText();}
   else if(id.indexOf('in-s-')===0){var pp=id.split('-');settings.sheets[pp[2]][+pp[3]]=e.target.value;save('vq.settings',settings);}
@@ -764,7 +822,7 @@ app.addEventListener('change',function(e){
 });
 render();
 try{if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
-if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length)||data.v!==2)doFetch();
+if(data.src.ja==='sample'||data.src.en==='sample'||!(data.en[3]&&data.en[3].length)||!(data.jp[0]&&data.jp[0].length)||data.v!==3)doFetch();
 })();
 </script>
 </body>
