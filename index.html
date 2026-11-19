@@ -163,6 +163,9 @@ table.fmt th{background:var(--mint-soft)}
 .conj b{font-size:.8rem;color:var(--ink-soft)}
 .conj dl{margin:6px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px 12px}
 .conj dt{font-size:.72rem;color:var(--ink-soft)}
+.conj b small{font-weight:500;opacity:.75}
+.cf{font:inherit;font-weight:700;text-align:left;padding:0 10px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--mint);width:100%;min-height:40px}
+.cf:active{background:var(--mint-soft)}
 .conj dd{margin:0;font-weight:700;line-height:2;font-family:var(--font-ja);overflow-wrap:anywhere}
 table.g td,table.g th{line-height:2;font-family:var(--font-ja)}
 table.g td{font-weight:700}
@@ -351,7 +354,9 @@ function relHtml(lang,w){
   var s=list(w.syn),a=list(w.ant);if(!s.length&&!a.length)return '';
   return '<div class="conj rels">'+(s.length?'<div><b>유의어</b><span class="rel-row">'+s.map(item).join('')+'</span></div>':'')+(a.length?'<div><b>반의어</b><span class="rel-row">'+a.map(item).join('')+'</span></div>':'')+'</div>';
 }
-function conjTable(title,rows){return '<div class="conj"><b>'+title+'</b><dl>'+rows.map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+ruby(r[1],true)+'</dd></div>';}).join('')+'</dl></div>';}
+function conjTable(title,rows){return '<div class="conj"><b>'+title+' <small>누르면 발음</small></b><dl>'+rows.map(function(r){
+  var say=String(r[1]).replace(/[\u3131-\uD79D+]/g,'').trim();
+  return '<div><dt>'+r[0]+'</dt><dd><button type="button" class="cf" data-speak="'+esc(say)+'" data-kind="word">'+ruby(r[1],true)+'</button></dd></div>';}).join('')+'</dl></div>';}
 function conjHtml(w,pos){
   var word=w.word,s,rows;
   if(pos.charAt(0)==='v'){
