@@ -355,7 +355,7 @@ function relHtml(lang,w){
   return '<div class="conj rels">'+(s.length?'<div><b>유의어</b><span class="rel-row">'+s.map(item).join('')+'</span></div>':'')+(a.length?'<div><b>반의어</b><span class="rel-row">'+a.map(item).join('')+'</span></div>':'')+'</div>';
 }
 function conjTable(title,rows){return '<div class="conj"><b>'+title+' <small>누르면 발음</small></b><dl>'+rows.map(function(r){
-  var say=String(r[1]).replace(/[\u3131-\uD79D+]/g,'').trim();
+  var say=String(r[1]).replace(/[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF+]/g,'').trim();
   return '<div><dt>'+r[0]+'</dt><dd><button type="button" class="cf" data-speak="'+esc(say)+'" data-kind="word">'+ruby(r[1],true)+'</button></dd></div>';}).join('')+'</dl></div>';}
 function conjHtml(w,pos){
   var word=w.word,s,rows;
