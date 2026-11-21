@@ -777,16 +777,34 @@ function autoStep(){
   });
 }
 function autoStart(){try{window.speechSynthesis.cancel();}catch(e){}auto.on=true;auto.paused=false;auto.i=0;auto.token++;autoStep();}
+function pauseNow(){if(!auto.on||auto.paused)return;auto.paused=true;auto.token++;clearTimeout(auto.timer);try{window.speechSynthesis.cancel();}catch(e){}
+  var L=studyList();if(auto.i<L.length){S.opened={};S.opened[key(S.lang,L[auto.i])]=1;}}
 function autoPause(){if(!auto.on)return;
-  if(!auto.paused){auto.paused=true;auto.token++;clearTimeout(auto.timer);try{window.speechSynthesis.cancel();}catch(e){}
-    var L=studyList();if(auto.i<L.length){S.opened={};S.opened[key(S.lang,L[auto.i])]=1;}render();}
+  if(!auto.paused){pauseNow();render();}
   else{auto.paused=false;auto.token++;try{window.speechSynthesis.cancel();}catch(e){}autoStep();}}
 
 /* ---------- 이벤트 ---------- */
-document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.lang=b.dataset.lang;if(S.lang==='ja'&&S.level>2)S.level=0;S.mark=false;S.pg={};S.opened={};S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
+/* 탭별 상태 보관: 다른 탭에 다녀와도 형광펜·필터·펼친 카드·일시 정지 위치가 그대로 남음 */
+var saved={};
+function scrollY(){return window.scrollY||window.pageYOffset||0;}
+document.getElementById('tab-lang').addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.dataset.lang===S.lang)return;
+  pauseNow();
+  saved[S.lang]={level:S.level,mark:S.mark,pg:S.pg,opened:S.opened,query:S.query,y:S.view==='list'?scrollY():S.listY,auto:auto.on?{i:auto.i}:null};
+  auto.on=false;auto.paused=false;auto.token++;clearTimeout(auto.timer);
+  S.lang=b.dataset.lang;var r=saved[S.lang];
+  if(r){S.level=r.level;S.mark=r.mark;S.pg=r.pg;S.opened=r.opened;S.query=r.query;if(r.auto){auto.on=true;auto.paused=true;auto.i=r.auto.i;}}
+  else{if(S.lang==='ja'&&S.level>2)S.level=0;S.mark=false;S.pg={};S.opened={};S.query='';}
+  if(S.view==='result'||S.view==='grammar')S.view='list';
+  render();
+  if(S.view==='list'){var y=r&&r.y||0;S.listY=y;window.scrollTo(0,y);}
+  else S.listY=r&&r.y||0;});
 document.getElementById('tab-level').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;autoHalt();S.level=+b.dataset.level;S.mark=false;S.pg={};S.opened={};S.query='';if(S.view==='result'||S.view==='grammar')S.view='list';render();});
-document.getElementById('btn-grammar').addEventListener('click',function(){if(S.view==='quiz')return;autoHalt();S.view=S.view==='grammar'?'list':'grammar';render();window.scrollTo(0,0);});
-document.getElementById('btn-settings').addEventListener('click',function(){autoHalt();S.view=S.view==='settings'?'list':'settings';S.status=null;S.confirmReset=false;render();});
+function goView(v){if(S.view==='quiz'&&v==='grammar')return;pauseNow();
+  if(S.view==='list')S.listY=scrollY();
+  S.view=S.view===v?'list':v;render();
+  window.scrollTo(0,S.view==='list'?(S.listY||0):0);}
+document.getElementById('btn-grammar').addEventListener('click',function(){goView('grammar');});
+document.getElementById('btn-settings').addEventListener('click',function(){S.status=null;S.confirmReset=false;goView('settings');});
 app.addEventListener('click',function(e){
   var t=e.target.closest('[data-speak],[data-open],[data-choice],[data-act],[data-pos],[data-mark]');if(!t)return;
   if(t.dataset.mark!=null){var mk=t.dataset.mark;if(marks[mk])delete marks[mk];else marks[mk]=1;save('vq.marks',marks);return render();}
