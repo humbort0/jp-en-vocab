@@ -470,6 +470,7 @@ function render(){
   else if(S.view==='grammar')app.innerHTML=viewGrammar();
   else app.innerHTML=viewList();
   app.style.cssText='display:flex;flex-direction:column;gap:14px';
+  wakeSync();
 }
 function viewList(){
   if(S.mark&&!markedList().length){S.mark=false;autoHalt();}
@@ -495,7 +496,7 @@ function viewList(){
       '<button type="button" class="ghost" data-act="auto">■ 멈추기</button>':
       '<button type="button" class="cta" data-act="auto">▶ '+filterLabel()+' 자동 읽기 ('+list.length+'개)</button>')+
     '<button type="button" class="ghost" data-act="openall">'+(allOpen?'모두 접기':'모두 펼치기 ('+list.length+'개)')+'</button></div>'+
-    '<p class="note" style="margin:0">'+(S.lang==='jp'?'형광펜으로 칠한 패턴을 모았습니다. 테마 버튼을 함께 누르면 그 테마만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 패턴을 하나씩 펼쳐 패턴과 예문 두 개를 읽고 닫은 뒤 다음으로 넘어갑니다. 일시 정지하면 지금 카드에서 멈추고, 이어 읽기를 누르면 그 카드부터 다시 읽습니다.</p>':'모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 품사 버튼을 함께 누르면 그 품사만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다. 일시 정지하면 지금 카드에서 멈추고, 이어 읽기를 누르면 그 카드부터 다시 읽습니다.</p>');
+    '<p class="note" style="margin:0">'+(S.lang==='jp'?'형광펜으로 칠한 패턴을 모았습니다. 테마 버튼을 함께 누르면 그 테마만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 패턴을 하나씩 펼쳐 패턴과 예문 두 개를 읽고 닫은 뒤 다음으로 넘어갑니다. 카드를 펼쳐 두고 시작하면 첫 번째로 펼친 카드부터 읽습니다. 일시 정지하면 지금 카드에서 멈추고, 이어 읽기를 누르면 그 카드부터 다시 읽습니다. 읽는 동안에는 화면이 꺼지지 않습니다.</p>':'모든 난이도에서 형광펜으로 칠한 단어를 모았습니다. 품사 버튼을 함께 누르면 그 품사만 남습니다. 여기서는 카드를 여러 개 동시에 펼칠 수 있습니다. 자동 읽기는 단어를 하나씩 펼쳐 단어와 예문을 읽고 닫은 뒤 다음으로 넘어갑니다. 카드를 펼쳐 두고 시작하면 첫 번째로 펼친 카드부터 읽습니다. 일시 정지하면 지금 카드에서 멈추고, 이어 읽기를 누르면 그 카드부터 다시 읽습니다. 읽는 동안에는 화면이 꺼지지 않습니다.</p>');
   h+='<section class="panel"><label class="search" for="q-search"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
     '<input id="q-search" type="search" placeholder="'+(S.lang==='jp'?'패턴·뜻·예문 검색':'단어·뜻 검색')+'" value="'+esc(S.query)+'" autocomplete="off"></label></section>';
   h+='<section class="grid" id="grid">'+gridHtml(shown,list.length)+'</section>';
@@ -746,7 +747,7 @@ function doPaste(){
 
 /* ---------- 형광펜 자동 읽기 ---------- */
 var auto={on:false,paused:false,i:0,timer:null,token:0};
-function autoHalt(){if(!auto.on)return;auto.on=false;auto.paused=false;auto.token++;clearTimeout(auto.timer);try{window.speechSynthesis.cancel();}catch(e){}}
+function autoHalt(){if(!auto.on)return;auto.on=false;auto.paused=false;auto.token++;clearTimeout(auto.timer);try{window.speechSynthesis.cancel();}catch(e){}wakeSync();}
 function autoStop(){autoHalt();S.opened={};render();}
 function speakSeq(parts,lang,done){
   var q=[],tk=auto.token;
@@ -776,7 +777,26 @@ function autoStep(){
     },700);
   });
 }
-function autoStart(){try{window.speechSynthesis.cancel();}catch(e){}auto.on=true;auto.paused=false;auto.i=0;auto.token++;autoStep();}
+function autoStart(){try{window.speechSynthesis.cancel();}catch(e){}
+  var L=studyList(),first=0;
+  for(var i=0;i<L.length;i++){if(S.opened[key(S.lang,L[i])]){first=i;break;}}
+  auto.on=true;auto.paused=false;auto.i=first;auto.token++;autoStep();}
+/* 자동 읽기 중에는 화면이 꺼지지 않게 (Screen Wake Lock) */
+var wake=null,wakeAsk=false;
+function wakeWant(){return auto.on&&!auto.paused&&document.visibilityState!=='hidden';}
+function wakeSync(){
+  try{
+    if(wakeWant()){
+      if(wake||wakeAsk||!navigator.wakeLock)return;
+      wakeAsk=true;
+      navigator.wakeLock.request('screen').then(function(l){wakeAsk=false;
+        if(!wakeWant()){l.release().catch(function(){});return;}
+        wake=l;l.addEventListener('release',function(){if(wake===l)wake=null;});
+      },function(){wakeAsk=false;});
+    }else if(wake){var l=wake;wake=null;l.release().catch(function(){});}
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',wakeSync);
 function pauseNow(){if(!auto.on||auto.paused)return;auto.paused=true;auto.token++;clearTimeout(auto.timer);try{window.speechSynthesis.cancel();}catch(e){}
   var L=studyList();if(auto.i<L.length){S.opened={};S.opened[key(S.lang,L[auto.i])]=1;}}
 function autoPause(){if(!auto.on)return;
